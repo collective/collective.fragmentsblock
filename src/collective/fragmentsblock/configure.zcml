@@ -32,4 +32,7 @@
       handler="collective.fragmentsblock.setuphandlers.uninstall"
       />
 
+
+  <include package=".views" />
+
 </configure>
