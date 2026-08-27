@@ -42,29 +42,38 @@ block's own `variables` mapping.**
    render anything — a round-trip for markup the browser could already
    have, and a second source of truth to keep in sync.
 
-2. **Metadata is the registry record.** Title and description live in the
-   record, not in front matter inside the `.pt`/`.html` file and not in a
-   sidecar. The file therefore stays exactly what the designer delivered:
-   valid, unannotated mockup HTML that other tools can open.
+2. **Metadata is the registry record.** The title lives in the record, not
+   in front matter inside the `.html` file and not in a sidecar. The file
+   therefore stays exactly what the designer delivered: valid, unannotated
+   mockup HTML that other tools can open.
 
 3. **Templating is `${name}` substitution, not TAL/Chameleon.** Page
    Templates would render only on the server, which contradicts (1). The
    substitution is deliberately minimal — HTML-escaped values, missing
-   variables as empty strings — and is implemented twice, in
-   `bundle-src/src/fragments.ts` and in `fragments.py`, as the price of
-   having both surfaces render the same file. Anything richer than token
+   variables as empty strings, a short coercion table for the JSON types —
+   and is implemented twice, in `bundle-src/src/fragments.ts` and in
+   `fragments.py`, as the price of having both surfaces render the same
+   file. Where the two languages disagree (`str(True)` vs `String(true)`,
+   integral floats, containers) the JavaScript spelling wins, because the
+   editor cannot produce any other one. Anything richer than token
    replacement must be a block of its own, not a template language
    re-implemented in two runtimes.
 
-4. **Classic rendering reads the same file** through a named
+4. **Ids are slugs, enforced on both sides.** The server resolves an id to
+   `<id>.html` inside the provider's directory, so an id it cannot resolve
+   must not reach the editor's picker either — a fragment that renders on
+   the canvas and vanishes when published is the one failure mode fail-soft
+   placeholders cannot explain.
+
+5. **Classic rendering reads the same file** through a named
    `IFragmentsProvider` utility (`FragmentsFolder` over the provider's
    directory), so a provider keeps its fragments in one place and the two
    halves cannot drift apart in content — only, if the implementations
    diverge, in substitution. That parity is covered by tests on both
    sides.
 
-5. **Fail-soft, and ids are slugs.** An id whose provider is not
-   installed, or one shaped like a path traversal, renders the invisible
+6. **Fail-soft.** An id whose provider is not installed, or one shaped
+   like a path traversal, renders the invisible
    `block-fragment-unresolved` placeholder rather than an error or a file
    read outside the fragments directory.
 
@@ -80,7 +89,14 @@ block's own `variables` mapping.**
   design needed is gone.
 - **Duplicated substitution logic** in TypeScript and Python is a standing
   parity obligation; keep it trivial enough that parity stays checkable by
-  reading both functions side by side.
+  reading both functions side by side. The paired test cases
+  (`TestCoerceParity` and the coercion test in the vitest suite) are the
+  contract's teeth — extend both or neither.
+- **Fragments are trusted, executable code.** They ship with an add-on, so
+  a `<script>` in one runs on the published page — the mechanism deploys
+  developer-authored markup and sanitizes nothing. (The editor's
+  client-side rendering leaves such a script inert, which makes a
+  script-bearing fragment a parity trap as well as a smell.)
 - **Escaped variables only.** A variable can never inject markup. A
   fragment needing a variable *region* of HTML wants a block, or a
   dedicated fragment per variant.

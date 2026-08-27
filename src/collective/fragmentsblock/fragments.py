@@ -15,6 +15,7 @@ placeholder), never a broken page.
 """
 
 import html
+import math
 import re
 from logging import getLogger
 from pathlib import Path
@@ -63,8 +64,10 @@ class FragmentsFolder:
 def resolve(fragment_id):
     """The raw HTML registered for ``fragment_id``, or ``None``.
 
-    Providers are asked in utility-name order; ids are expected to be
-    site-unique, so the first hit wins deterministically either way.
+    Ids share one flat, site-wide namespace across every provider:
+    providers are asked in utility-name order and the first hit wins, so a
+    second provider reusing an id shadows the first (the editor-side
+    registry, keyed by name, resolves such a clash the same way).
     """
     if not isinstance(fragment_id, str) or not _ID_RE.match(fragment_id):
         return None
@@ -79,13 +82,42 @@ def resolve(fragment_id):
     return None
 
 
+def coerce(value):
+    """The coercion table both halves implement (``fragments.ts coerce``).
+
+    Values arrive as JSON, so booleans and numbers are ordinary; each one
+    is rendered the way JavaScript renders it, because the editor cannot
+    render it any other way and the two surfaces must agree. Anything
+    outside the table (lists, dicts) renders empty rather than as a
+    Python-flavoured string.
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    # before int: bool is an int subclass
+    if isinstance(value, bool):
+        return "true" if value else "false"
+    if isinstance(value, int):
+        return str(value)
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return ""
+        # JS has one number type: 1.0 prints as "1"
+        return str(int(value)) if value.is_integer() else repr(value)
+    return ""
+
+
 def substitute(markup, variables):
     """Fill ``${var}`` tokens; mirrors the JS ``renderFragmentHtml``."""
     values = variables if isinstance(variables, dict) else {}
 
     def _value(match):
-        value = values.get(match.group(1))
-        return "" if value is None else html.escape(str(value))
+        name = match.group(1)
+        if name not in values:
+            return ""
+        # quote=True gives exactly the JS escape set: & < > " ' -> &#x27;
+        return html.escape(coerce(values[name]), quote=True)
 
     return _TOKEN_RE.sub(_value, markup)
 

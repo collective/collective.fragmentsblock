@@ -45,3 +45,40 @@ class TestSubstitute:
 
     def test_none_value_is_empty(self):
         assert substitute("<p>${phone}</p>", {"phone": None}) == "<p></p>"
+
+    def test_quotes_escaped_like_the_js_half(self):
+        out = substitute("${v}", {"v": "\"a\" 'b' & <c>"})
+        assert out == "&quot;a&quot; &#x27;b&#x27; &amp; &lt;c&gt;"
+
+
+class TestCoerceParity:
+    """The coercion table is the JS half's, value for value.
+
+    Each expectation here is what ``String(value)`` produces in JavaScript
+    (``bundle-src/src/fragments.ts``), not what ``str(value)`` produces in
+    Python — the editor cannot render these any other way, and the two
+    surfaces must emit the same markup. The mirror-image cases live in
+    ``bundle-src/test/fragment-block.test.tsx``.
+    """
+
+    def test_booleans_render_lowercase(self):
+        assert substitute("${v}", {"v": True}) == "true"
+        assert substitute("${v}", {"v": False}) == "false"
+
+    def test_integers_render_as_decimals(self):
+        assert substitute("${v}", {"v": 0}) == "0"
+        assert substitute("${v}", {"v": -42}) == "-42"
+
+    def test_integral_floats_lose_the_decimal_point(self):
+        assert substitute("${v}", {"v": 1.0}) == "1"
+        assert substitute("${v}", {"v": 2.5}) == "2.5"
+
+    def test_containers_render_empty(self):
+        assert substitute("${v}", {"v": ["a", "b"]}) == ""
+        assert substitute("${v}", {"v": {"k": 1}}) == ""
+
+    def test_prototype_shaped_names_are_not_special(self):
+        # ${toString} resolves to nothing here and, since the JS half uses
+        # Object.hasOwn, to nothing there either
+        assert substitute("${toString}${constructor}", {}) == ""
+        assert substitute("${toString}", {"toString": "x"}) == "x"

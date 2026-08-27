@@ -1,10 +1,16 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import config from "@plone/registry";
 const FRAGMENT_UTILITY_TYPE = "collective.fragmentsblock.fragment";
+const FRAGMENT_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 function registerFragment(config2, record) {
   if (!record?.id || !record.title || typeof record.html !== "string") {
     throw new Error(
       "registerFragment: a fragment record needs id, title and html"
+    );
+  }
+  if (!FRAGMENT_ID_RE.test(record.id)) {
+    throw new Error(
+      `registerFragment: ${JSON.stringify(record.id)} is not a valid fragment id (must match /^[A-Za-z0-9][A-Za-z0-9_-]*$/, because the server resolves it to a filename)`
     );
   }
   config2.registerUtility({
@@ -15,7 +21,15 @@ function registerFragment(config2, record) {
 }
 function asRecord(utility) {
   const record = utility?.method;
-  return record && record.id && typeof record.html === "string" ? record : null;
+  if (!record || typeof record.html !== "string" || !record.title) return null;
+  if (typeof record.id !== "string" || !FRAGMENT_ID_RE.test(record.id)) {
+    console.warn(
+      "collective.fragmentsblock: ignoring a fragment record with an invalid id:",
+      record?.id
+    );
+    return null;
+  }
+  return record;
 }
 function getFragment(config2, id) {
   if (typeof id !== "string" || !id) return null;
@@ -26,13 +40,25 @@ function listFragments(config2) {
 }
 const TOKEN = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
 function escapeHtml(value) {
-  return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+}
+function coerce(value) {
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "";
+  return "";
 }
 function renderFragmentHtml(record, variables) {
   const values = variables && typeof variables === "object" ? variables : {};
   return record.html.replace(
     TOKEN,
-    (_match, name) => values[name] == null ? "" : escapeHtml(values[name])
+    (_match, name) => (
+      // hasOwn, not `values[name]`: a token named like an Object.prototype
+      // member (${toString}, ${constructor}) would otherwise resolve to the
+      // inherited member here and to nothing on the server.
+      Object.hasOwn(values, name) ? escapeHtml(coerce(values[name])) : ""
+    )
   );
 }
 const FragmentBlockView = ({ data }) => {

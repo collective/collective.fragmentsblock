@@ -41,6 +41,24 @@ describe('fragment registry conventions', () => {
     ).toThrow(/id, title and html/);
   });
 
+  it('rejects ids the server could never resolve to a file', () => {
+    for (const id of ['../secret', 'a/b', 'Contact Box', 'my.contact', '_x']) {
+      expect(() =>
+        registerFragment(config, { id, title: 'X', html: '<b/>' }),
+      ).toThrow(/not a valid fragment id/);
+    }
+  });
+
+  it('drops raw registrations with an invalid id instead of listing them', () => {
+    (config as any).registerUtility({
+      type: FRAGMENT_UTILITY_TYPE,
+      name: 'my.contact',
+      method: { id: 'my.contact', title: 'Bad id', html: '<b/>' },
+    });
+    expect(listFragments(config)).toEqual([]);
+    expect(getFragment(config, 'my.contact')).toBeNull();
+  });
+
   it('accepts raw registerUtility registrations (the bare convention)', () => {
     (config as any).registerUtility({
       type: FRAGMENT_UTILITY_TYPE,
@@ -69,6 +87,29 @@ describe('renderFragmentHtml', () => {
   it('passes markup through verbatim without variables', () => {
     const record = { id: 'x', title: 'X', html: '<div class="a">&amp; ok</div>' };
     expect(renderFragmentHtml(record)).toBe('<div class="a">&amp; ok</div>');
+  });
+
+  // The mirror image of TestCoerceParity in
+  // src/collective/fragmentsblock/tests/test_fragments.py — the two files
+  // are the parity contract, so keep the cases aligned.
+  it('coerces booleans, numbers and containers like the server', () => {
+    const t = (value: unknown) =>
+      renderFragmentHtml({ id: 'x', title: 'X', html: '${v}' }, { v: value });
+    expect(t(true)).toBe('true');
+    expect(t(false)).toBe('false');
+    expect(t(0)).toBe('0');
+    expect(t(-42)).toBe('-42');
+    expect(t(1.0)).toBe('1');
+    expect(t(2.5)).toBe('2.5');
+    expect(t(['a', 'b'])).toBe('');
+    expect(t({ k: 1 })).toBe('');
+    expect(t(Number.NaN)).toBe('');
+  });
+
+  it('does not resolve tokens through the prototype chain', () => {
+    const record = { id: 'x', title: 'X', html: '${toString}${constructor}' };
+    expect(renderFragmentHtml(record, {})).toBe('');
+    expect(renderFragmentHtml({ ...record, html: '${toString}' }, { toString: 'x' })).toBe('x');
   });
 
   it('substitutes ${var} tokens HTML-escaped, missing ones as empty', () => {

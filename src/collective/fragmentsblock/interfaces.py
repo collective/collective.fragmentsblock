@@ -20,4 +20,10 @@ class IFragmentsProvider(Interface):
     """
 
     def get(fragment_id):
-        """Return the fragment's raw HTML (str), or ``None`` if unknown."""
+        """Return the fragment's raw HTML (str), or ``None`` if unknown.
+
+        ``fragments.resolve`` validates the id against the slug rule before
+        calling, so an implementation reached that way never sees a path
+        traversal. An implementation that may also be called directly is
+        responsible for its own bounds.
+        """

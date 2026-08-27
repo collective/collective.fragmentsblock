@@ -27,7 +27,22 @@ fields, no transformers.
 **Templates, when needed.** The markup may contain `${name}` tokens,
 filled from the block's persisted `variables` mapping — missing variables
 render as empty strings and every value is HTML-escaped. Markup without
-tokens passes through byte-for-byte.
+tokens passes through byte-for-byte. Values arrive as JSON and are coerced
+identically on both surfaces:
+
+| Value | Renders as |
+| --- | --- |
+| string | itself |
+| `true` / `false` | `true` / `false` |
+| number | JavaScript's spelling (`1.0` → `1`, `2.5` → `2.5`) |
+| `null`, missing | empty |
+| array, object | empty (unsupported) |
+
+A variable is always escaped, so it can never inject markup. The
+**fragment file itself is trusted code**, not sanitized content: it is
+shipped by an add-on, and a `<script>` in it executes on the published
+page (the editor's client-side rendering leaves it inert — one more reason
+to keep fragments declarative).
 
 > **Known limit.** There is no editor UI for variables yet: a block's
 > `variables` mapping is settable through the REST API or a migration, and
@@ -40,7 +55,10 @@ tokens passes through byte-for-byte.
 **Blicca classic pages.** The server renderer `@@aurora-block-fragment`
 renders the same file through a named `IFragmentsProvider` utility, with
 identical substitution semantics — one file, two renderers, parity by
-construction.
+construction. Both surfaces wrap the markup in a single
+`<div class="block-fragment">`; the fragment's own root element sits
+inside it, so mockup HTML written for a grid or flex parent needs that
+wrapper accounted for.
 
 **Fail-soft.** An unknown id, an uninstalled provider, or a
 traversal-shaped id degrades to an invisible
@@ -76,11 +94,28 @@ export default function install(config) {
 ```
 
 The record's `id` must equal the registration name (enumeration drops
-utility names) and is a slug (`[A-Za-z0-9][A-Za-z0-9_-]*`); `title` is the
-picker label. Registering through the raw registry needs no dependency on
-this package; the npm package `@plone-collective/aurora-fragment-block`
-also exports a `registerFragment(config, record)` convenience that
-validates the record.
+utility names) and must be a slug matching
+`^[A-Za-z0-9][A-Za-z0-9_-]*$` — the server resolves it to `<id>.html`, so
+a dotted or spaced id would work in the editor and resolve to nothing on
+a published page. Records that break the rule are dropped from the picker
+with a console warning rather than silently. `title` is the picker label,
+and the list is sorted by it.
+
+Ids share **one flat, site-wide namespace** across all providers: the
+server asks providers in utility-name order and takes the first hit, and
+the client-side registry is keyed by name, so a second provider reusing an
+id shadows the first. Prefix them if a site may install several providers.
+
+Registering through the raw registry needs no dependency on this package;
+the npm package `@plone-collective/aurora-fragment-block` also exports
+`registerFragment(config, record)`, which throws on a missing field or an
+invalid id instead of failing later.
+
+> **Rebuild the provider's bundle after editing a fragment file.** The
+> classic renderer re-reads the file on every render, but the editor half
+> inlines it at build time through the `?raw` import — shipping only the
+> changed `.html` leaves the two surfaces disagreeing until `pnpm build`
+> runs in the provider's `bundle-src`.
 
 **Server half** — one named utility over the same folder:
 
@@ -115,7 +150,11 @@ still works, the editor just types the fragment id.
 
 ## Repository layout
 
-One repo, two ecosystems (per the Blicca block add-on contract, ADR 0013):
+One repo, two ecosystems, per the Blicca block add-on contract
+(`docs/design/aurora-block-addon-contract.md` and
+`docs/adr/0013-block-addons-extension-point.md` in
+`plone.blicca.auroraeditor`, which the `§` references in this package's
+docstrings point at):
 
 - `src/collective/fragmentsblock/` — the Plone add-on: the
   `@@aurora-block-fragment` server renderer, the `IFragmentsProvider`
@@ -132,8 +171,8 @@ One repo, two ecosystems (per the Blicca block add-on contract, ADR 0013):
 ## Installation
 
 Add `collective.fragmentsblock` to your project dependencies and install it
-via the Plone add-ons control panel. Requires `plone.blicca.auroraeditor`
-(>= 1.0.0a2, block-api 1.0).
+via the Plone add-ons control panel. Requires Plone >= 6.0, Python >= 3.10
+and `plone.blicca.auroraeditor` >= 1.0.0a2 (block-api 1.0).
 
 ## Development
 
@@ -142,7 +181,7 @@ Rebuild the committed editor bundle after changing `bundle-src/`:
 ```shell
 cd bundle-src
 pnpm install
-pnpm build   # writes src/collective/fragmentsblock/static/fragment-block.{js,css}
+pnpm build   # -> static/fragment-block.{js,js.map,css} in the Python package
 pnpm test    # vitest suite for the registry conventions and renderers
 ```
 
