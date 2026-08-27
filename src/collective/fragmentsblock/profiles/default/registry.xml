@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<registry>
+  <!-- One IAuroraBlockAddon record per block (block add-on contract §3.2);
+       discovery is per-site, in lockstep with the browser layer that
+       activates the server renderer. -->
+  <records
+      interface="plone.blicca.auroraeditor.interfaces.IAuroraBlockAddon"
+      prefix="plone.blicca.auroraeditor.blockaddons/collective.fragmentsblock.fragment"
+      >
+    <value key="bundle">++plone++collective.fragmentsblock/fragment-block.js</value>
+    <value key="block_api">1.0</value>
+    <value key="css">++plone++collective.fragmentsblock/fragment-block.css</value>
+    <value key="types">
+      <element>fragment</element>
+    </value>
+    <value key="enabled">True</value>
+    <value key="weight">100</value>
+  </records>
+</registry>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<registry>
+  <!-- Remove the add-on's record so the editor degrades to the
+       unknown-block placeholder and the public page to block-unrendered
+       (uninstall stays in lockstep with the browser layer). -->
+  <records
+      interface="plone.blicca.auroraeditor.interfaces.IAuroraBlockAddon"
+      prefix="plone.blicca.auroraeditor.blockaddons/collective.fragmentsblock.fragment"
+      remove="true"
+      />
+</registry>

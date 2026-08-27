@@ -1,4 +1,5 @@
 """Setup handlers for collective.fragmentsblock."""
+
 from Products.CMFPlone.interfaces import INonInstallable
 from zope.interface import implementer
 

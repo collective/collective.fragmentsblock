@@ -1,7 +1,7 @@
 [project]
 name = "collective.fragmentsblock"
 version = "1.0.0a1"
-description = "Aurora fragment block: reusable content fragments referenced live from central fragment documents"
+description = "Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "GPL-2.0-or-later"}
@@ -25,6 +25,7 @@ keywords = ["Plone", "CMS"]
 
 dependencies = [
     "Plone>=6.0",
+    "plone.blicca.auroraeditor>=1.0.0a2",
     "setuptools<81",
 ]
 
@@ -56,7 +57,7 @@ packages = ["src/collective"]
 [tool.plone.backend_addon.settings]
 package_name = "collective.fragmentsblock"
 package_title = "Collective Fragmentsblock"
-package_description = "Aurora fragment block: reusable content fragments referenced live from central fragment documents"
+package_description = "Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
 package_folder = "collective/fragmentsblock"
 plone_version = "6.0"
 is_headless = false

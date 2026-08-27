@@ -1,0 +1,21 @@
+/* Anatomy classes per the block add-on contract §1/§6: one scope-wrapped
+   asset styles the editor and the public blocks view alike. The fragment's
+   own markup deliberately gets no styling from here — it is the design
+   mockup's HTML, styled by the theme it was cut from. */
+
+.block-fragment-placeholder {
+  border: 1px dashed #9aa2ab;
+  border-radius: 0.375rem;
+  padding: 1.5rem;
+  text-align: center;
+  color: #55606b;
+}
+
+.block-fragment-unresolved {
+  /* the fail-soft placeholder stays invisible outside the editor */
+  display: none;
+}
+
+.block-fragment .fragment-note {
+  margin: 0;
+}
