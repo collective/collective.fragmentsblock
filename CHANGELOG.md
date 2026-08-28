@@ -2,6 +2,18 @@
 
 ## 1.0.0a1 (unreleased)
 
+- The fragment block's settings form now carries **block width** and
+  **background** — the two placement controls, offered because a fragment
+  is a piece of a design rather than a whole one: a contact box wants the
+  narrow column, a divider the full bleed, and the same file may want both
+  on two different pages. Both are Aurora style fields, so the editor and
+  the classic renderer stamp the class and custom properties on the block
+  wrapper generically — no change to either view component or to
+  `@@aurora-block-fragment`. Width defaults to `default`, the width
+  fragment blocks already rendered at, so existing content is unchanged;
+  the background slots are read from the host's registered palette and the
+  field is omitted on a host that registers none.
+
 - Initial release: the Aurora **fragment block** (`@type: fragment`) —
   drop registered **design fragments** (static HTML files, typically cut
   verbatim from a design mockup) into any Aurora-edited page. Aurora-first:

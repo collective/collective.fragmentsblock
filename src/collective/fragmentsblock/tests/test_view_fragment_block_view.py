@@ -104,6 +104,27 @@ class TestFragmentBlockRendering:
         html = self._render(self.page)
         assert "block-fragment-unresolved" in html
 
+    # Width and background are Aurora style fields: the editor and plate.py
+    # stamp them on the wrapping .block element generically, so neither the
+    # block's view components nor @@aurora-block-fragment touch them. These
+    # two pin that the generic path really does reach a fragment block —
+    # the parity the sidebar controls promise.
+    def test_block_width_reaches_the_wrapper(self):
+        node = fragment_node("contact-box")
+        node["blockWidth"] = "full"
+        set_blocks(self.page, [node])
+        html = self._render(self.page)
+        assert "has--block-width--full" in html
+        assert "--block-width: 100%" in html
+
+    def test_background_reaches_the_wrapper(self):
+        node = fragment_node("contact-box")
+        node["backgroundColor"] = "grey"
+        set_blocks(self.page, [node])
+        html = self._render(self.page)
+        assert "has--backgroundColor--grey" in html
+        assert "--block-background:" in html
+
     def test_traversal_shaped_id_renders_placeholder(self):
         set_blocks(self.page, [fragment_node("../conftest")])
         html = self._render(self.page)

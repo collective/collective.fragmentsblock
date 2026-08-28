@@ -23,10 +23,12 @@
     "test": "vitest run"
   },
   "peerDependencies": {
+    "@plone/helpers": "^2.0.0-alpha.7",
     "@plone/registry": "*",
     "react": "^18 || ^19"
   },
   "devDependencies": {
+    "@plone/helpers": "2.0.0-alpha.7",
     "@types/react": "^19.0.0",
     "postcss": "^8.5.3",
     "typescript": "^5.7.0",

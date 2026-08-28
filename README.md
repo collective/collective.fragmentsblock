@@ -139,14 +139,50 @@ provider = FragmentsFolder(Path(__file__).parent / "fragments")
 
 Editors insert a **Fragment** block via the slash menu and choose the
 fragment in the block settings — the list shows every registered
-fragment's title. That's all; the markup renders immediately (it's already
-in the browser), and a redeployed fragment file updates every page
-embedding it.
+fragment's title. The markup renders immediately (it's already in the
+browser), and a redeployed fragment file updates every page embedding it.
 
 The picker is a plain schema field carrying `choices`, so it renders as a
 select wherever the host registers a widget for that slot (Blicca does).
 A host that registers none degrades the field to a text input — the block
 still works, the editor just types the fragment id.
+
+### Width and background
+
+The same settings form carries the two **placement** controls, because a
+fragment is a piece of a design rather than a whole one: where it sits is
+the page's business, not the file's. A contact box wants the narrow
+column; a divider wants the full bleed; the same file may want both on
+two different pages.
+
+- **Block width** — `narrow | default | layout | full`, defaulting to
+  `default` (the width fragment blocks already rendered at, so existing
+  content is unchanged).
+- **Background** — a *named* palette slot, never a color: the author picks
+  `Grey`, `Accent` or `Dark`, and the theme decides what those look like
+  through the `--aurora-block-bg-*` custom properties.
+
+Both are Aurora **style fields** (`styleField: true`), which is the whole
+of the wiring: the editor resolves them into a
+`has--block-width--<value>` / `has--backgroundColor--<value>` class plus
+inline custom properties on the block wrapper, and the classic renderer
+stamps the identical pair — neither this block's view components nor its
+server renderer touch them. Consequently the background paints the
+*wrapper*, outside the `<div class="block-fragment">`, and a fragment
+whose own markup sets a background of its own simply covers it.
+
+The background choices are read from the host's registered palette
+(a `styleFieldDefinition` registry utility named `backgroundColor`) rather
+than hardcoded, so the slots always match what the host can actually
+render — and on a host that registers none, the field is omitted instead
+of offering a select whose every option resolves to nothing.
+
+> Deliberately **no** `defaultBlockWidth`. Declaring one alongside the
+> schema field is a contradiction: the style field wins and the default is
+> silently dropped (block add-on contract §1.4). Fragment blocks created
+> outside the editor — REST API, migration, test fixture — carry no
+> `blockWidth` and render at `default`; an upgrade step that wants another
+> width has to write the key itself.
 
 ## Repository layout
 

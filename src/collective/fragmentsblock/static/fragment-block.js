@@ -1,5 +1,6 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import config from "@plone/registry";
+import { getStyleFieldDefinitionsFromRegistry } from "@plone/helpers";
 const FRAGMENT_UTILITY_TYPE = "collective.fragmentsblock.fragment";
 const FRAGMENT_ID_RE = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
 function registerFragment(config2, record) {
@@ -109,32 +110,69 @@ const FragmentIcon = (props) => /* @__PURE__ */ jsxs(
     ]
   }
 );
-function FragmentSchema() {
+const BLOCK_WIDTH_FIELD = {
+  title: "Block width",
+  widget: "width",
+  // The width nodes already render at when they carry none, so adding the
+  // control leaves every existing fragment block exactly where it was.
+  default: "default",
+  styleField: true
+};
+const BACKGROUND_FIELD_NAME = "backgroundColor";
+function backgroundField(data) {
+  const definitions = getStyleFieldDefinitionsFromRegistry(
+    BACKGROUND_FIELD_NAME,
+    // A definition factory MAY vary its palette by block; pass the block's
+    // own data so one that does sees this block rather than a blank.
+    { data, blockType: "fragment", fieldName: BACKGROUND_FIELD_NAME }
+  );
+  const choices = definitions.filter((definition) => typeof definition?.name === "string").map((definition) => [definition.name, definition.label || definition.name]);
+  if (!choices.length) return null;
+  return {
+    title: "Background",
+    choices,
+    // Only the conventional neutral slot may be a default; anything else
+    // would paint every fragment block ever inserted. A palette without
+    // one gets no default at all — an unresolvable value contributes no
+    // style, which is the same "unpainted" the neutral slot means.
+    ...choices.some(([name]) => name === "none") ? { default: "none" } : {},
+    styleField: true
+  };
+}
+function FragmentSchema(args) {
+  const fields = ["fragment", "blockWidth"];
+  const properties = {
+    fragment: {
+      title: "Fragment",
+      description: "A registered design fragment, rendered as-is.",
+      // The leading empty choice keeps the select honest: a select
+      // whose options all name a fragment would show the first one as
+      // chosen while the block still stores nothing.
+      choices: [
+        ["", "— Choose a fragment —"],
+        ...listFragments(config).map((record) => [
+          record.id,
+          record.title
+        ])
+      ]
+    },
+    blockWidth: { ...BLOCK_WIDTH_FIELD }
+  };
+  const background = backgroundField(args?.data ?? {});
+  if (background) {
+    fields.push(BACKGROUND_FIELD_NAME);
+    properties[BACKGROUND_FIELD_NAME] = background;
+  }
   return {
     title: "Fragment",
     fieldsets: [
       {
         id: "default",
         title: "Default",
-        fields: ["fragment"]
+        fields
       }
     ],
-    properties: {
-      fragment: {
-        title: "Fragment",
-        description: "A registered design fragment, rendered as-is.",
-        // The leading empty choice keeps the select honest: a select
-        // whose options all name a fragment would show the first one as
-        // chosen while the block still stores nothing.
-        choices: [
-          ["", "— Choose a fragment —"],
-          ...listFragments(config).map((record) => [
-            record.id,
-            record.title
-          ])
-        ]
-      }
-    },
+    properties,
     required: ["fragment"]
   };
 }

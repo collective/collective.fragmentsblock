@@ -25,7 +25,20 @@ const CONTACT_BOX = {
 beforeEach(() => {
   (config as any).blocks.blocksConfig = {};
   (config as any)._utilities[FRAGMENT_UTILITY_TYPE] = {};
+  (config as any)._utilities.styleFieldDefinition = {};
 });
+
+// The host's background palette: a `styleFieldDefinition` utility named
+// after the style field (Blicca registers exactly this in its bootstrap).
+const registerBackgroundPalette = () =>
+  (config as any).registerUtility({
+    type: 'styleFieldDefinition',
+    name: 'backgroundColor',
+    method: () => [
+      { name: 'none', label: 'None', style: {} },
+      { name: 'grey', label: 'Grey', style: { '--block-background': '#eee' } },
+    ],
+  });
 
 describe('fragment registry conventions', () => {
   it('registers and resolves a fragment record', () => {
@@ -162,5 +175,81 @@ describe('block components', () => {
       ['contact-box', 'Contact box'],
     ]);
     expect(schema.required).toEqual(['fragment']);
+  });
+});
+
+// Width and background are Aurora *style fields*: declaring the schema
+// property is the whole of the wiring, since StyleFieldsKit (editor) and
+// plate.py (server) stamp the class and custom properties on the block
+// wrapper generically. So what there is to test is the declaration.
+describe('style fields', () => {
+  it('offers the width control, defaulting to the width it renders at now', () => {
+    install(config);
+    const schema = (config as any).blocks.blocksConfig.fragment.blockSchema();
+    expect(schema.fieldsets[0].fields).toContain('blockWidth');
+    expect(schema.properties.blockWidth).toEqual({
+      title: 'Block width',
+      widget: 'width',
+      default: 'default',
+      styleField: true,
+    });
+  });
+
+  it('never declares defaultBlockWidth alongside the field', () => {
+    // Contract §1.4: a schema style field wins over defaultBlockWidth, so
+    // declaring both is a contradiction that silently drops the default.
+    install(config);
+    expect(
+      (config as any).blocks.blocksConfig.fragment.defaultBlockWidth,
+    ).toBeUndefined();
+  });
+
+  it('offers the background slots the host registered', () => {
+    registerBackgroundPalette();
+    install(config);
+    const schema = (config as any).blocks.blocksConfig.fragment.blockSchema();
+    expect(schema.fieldsets[0].fields).toContain('backgroundColor');
+    expect(schema.properties.backgroundColor).toEqual({
+      title: 'Background',
+      choices: [
+        ['none', 'None'],
+        ['grey', 'Grey'],
+      ],
+      default: 'none',
+      styleField: true,
+    });
+  });
+
+  it('omits the background field when the host registers no palette', () => {
+    install(config);
+    const schema = (config as any).blocks.blocksConfig.fragment.blockSchema();
+    expect(schema.fieldsets[0].fields).not.toContain('backgroundColor');
+    expect(schema.properties.backgroundColor).toBeUndefined();
+  });
+
+  it('only ever defaults to the neutral slot', () => {
+    // Any other default would paint every fragment block ever inserted; a
+    // palette without a `none` gets no default, and an unresolved value
+    // contributes no style — which is the same unpainted block.
+    (config as any).registerUtility({
+      type: 'styleFieldDefinition',
+      name: 'backgroundColor',
+      method: () => [{ name: 'grey', label: 'Grey', style: {} }],
+    });
+    install(config);
+    const schema = (config as any).blocks.blocksConfig.fragment.blockSchema();
+    expect(schema.properties.backgroundColor.choices).toEqual([
+      ['grey', 'Grey'],
+    ]);
+    expect(schema.properties.backgroundColor).not.toHaveProperty('default');
+  });
+
+  it('reads the palette lazily, not at install time', () => {
+    // The host bootstraps before add-on installs today, but the picker is
+    // built lazily for the same reason and both must survive the reverse.
+    install(config);
+    registerBackgroundPalette();
+    const schema = (config as any).blocks.blocksConfig.fragment.blockSchema();
+    expect(schema.properties.backgroundColor.choices).toHaveLength(2);
   });
 });
