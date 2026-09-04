@@ -2,6 +2,17 @@
 
 ## 1.0.0a1 (unreleased)
 
+- A fragment block now **names itself with the fragment's title** while blocks
+  are dragged. The editor collapses the canvas to one row per block and reads
+  each row's identifying line off the rendered block — but a fragment is a
+  piece of a design and is often pure decoration with no text at all, so every
+  fragment row read "Fragment" against an empty line and two of them in one
+  page were indistinguishable exactly while being reordered. The view stamps
+  `data-block-summary` with the record's title (block add-on contract §1.6),
+  which is the same string the picker offers, so the row reads "Fragment —
+  Balkenlage (Trenner)". Editing affordance only: the attribute is inert on
+  the classic page, whose server-rendered markup does not carry it.
+
 - The fragment block's settings form now carries **block width** and
   **background** — the two placement controls, offered because a fragment
   is a piece of a design rather than a whole one: a contact box wants the

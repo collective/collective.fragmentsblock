@@ -146,6 +146,18 @@ describe('block components', () => {
     expect(out).toContain('<aside class="contact-box"><h2>Contact</h2><p>030</p></aside>');
   });
 
+  // The editor names a block by `data-block-summary` where the block renders
+  // no text of its own (block add-on contract §1.6) — which is the normal
+  // case for a fragment, and the only thing that tells two of them apart in
+  // the drag rows, where the label is the constant "Fragment".
+  it('view names itself with the fragment title', () => {
+    registerFragment(config, CONTACT_BOX);
+    const out = renderToStaticMarkup(
+      <FragmentBlockView data={{ fragment: 'contact-box' }} />,
+    );
+    expect(out).toContain('data-block-summary="Contact box"');
+  });
+
   it('view fails soft to the invisible placeholder', () => {
     const out = renderToStaticMarkup(
       <FragmentBlockView data={{ fragment: 'gone' }} />,

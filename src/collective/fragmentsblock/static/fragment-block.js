@@ -71,6 +71,7 @@ const FragmentBlockView = ({ data }) => {
     "div",
     {
       className: "block-fragment",
+      "data-block-summary": record.title,
       dangerouslySetInnerHTML: {
         __html: renderFragmentHtml(record, data.variables)
       }
