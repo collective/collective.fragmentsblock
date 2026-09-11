@@ -70,6 +70,18 @@ behaviors = []
 services = []
 views = ["aurora-block-fragment"]
 
+[tool.uv]
+# Resolve against the Plone the site actually runs, so the lock CI installs is
+# the combination this add-on is developed against.
+constraint-dependencies = ["Products.CMFPlone==6.2.1"]
+
+[tool.uv.sources]
+# plone.blicca.auroraeditor is PRIVATE and not on PyPI. Locally it is the
+# sibling checkout under sources/; CI checks it out beside this repository so
+# the same relative path resolves there. uv ignores a dependency's own
+# sources, so this governs this package's lock and nothing else.
+"plone.blicca.auroraeditor" = { path = "../plone.blicca.auroraeditor", editable = true }
+
 [tool.pytest.ini_options]
 testpaths = ["src/collective/fragmentsblock/tests"]
 python_files = ["test_*.py"]

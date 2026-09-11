@@ -1,0 +1,114 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      BLICCA_TOKEN: ${{ secrets.BLICCA_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      # plone.blicca.auroraeditor is PRIVATE and not on PyPI: it is the editor
+      # this block mounts in and the source of the rendering API the package
+      # imports, so without it nothing installs and nothing is tested. A
+      # missing token is a red job on purpose — a green run over a package
+      # that could not be installed says nothing.
+      - name: Require the host checkout token
+        if: env.BLICCA_TOKEN == ''
+        run: |
+          echo "::error::BLICCA_TOKEN is not set. This package depends on"
+          echo "::error::plone.blicca.auroraeditor, which is private and not"
+          echo "::error::on PyPI, so the tests cannot run."
+          exit 1
+
+      # pyproject resolves the sources below from `../<name>`, so this
+      # repository checks itself out into a subdirectory and its siblings land
+      # beside it, exactly as they sit under the site's `sources/`.
+      - uses: actions/checkout@v5
+        with:
+          path: collective.fragmentsblock
+
+      - uses: actions/checkout@v5
+        with:
+          repository: derico-de/plone.blicca.auroraeditor
+          token: ${{ env.BLICCA_TOKEN }}
+          path: plone.blicca.auroraeditor
+
+      - name: Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run tests
+        working-directory: collective.fragmentsblock
+        run: uv run --frozen --extra test pytest -v
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+
+      - name: Run ruff
+        run: uvx ruff@0.16.6 check .
+
+  bundle:
+    # The editor half is committed build output — there is no Node on the
+    # deploy host (block add-on contract §3.1) — so nothing rebuilds it at
+    # install time and it rots the moment someone edits bundle-src/src/ and
+    # forgets. The `git diff --exit-code` below is what makes committing an
+    # artifact safe rather than merely convenient.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # pnpm is pinned here rather than by a `packageManager` field in
+      # bundle-src/package.json: pnpm 12 answers that field by writing a
+      # `packageManagerDependencies` block into the lockfile — its own binary
+      # for every platform — and the lockfile is not the place for that.
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: bundle-src/.nvmrc
+          cache: pnpm
+          cache-dependency-path: bundle-src/pnpm-lock.yaml
+
+      # `working-directory`, not `--dir`: the repository root has no
+      # package.json, and pnpm resolves the workspace from where it stands.
+      - name: Install
+        run: pnpm install --frozen-lockfile
+        working-directory: bundle-src
+
+      - name: Build
+        run: pnpm build
+        working-directory: bundle-src
+
+      # After the build: the harness reads the built artifact.
+      - name: Test
+        run: pnpm test
+        working-directory: bundle-src
+
+      # If this fails, someone edited bundle-src/src/ and did not rebuild.
+      - name: The committed bundle is the one this source builds
+        run: git diff --exit-code -- src/collective/fragmentsblock/static/
