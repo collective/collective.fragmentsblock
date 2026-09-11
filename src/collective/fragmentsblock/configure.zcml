@@ -32,6 +32,14 @@
       handler="collective.fragmentsblock.setuphandlers.uninstall"
       />
 
+  <!-- Keep the uninstall profile out of the Add-ons control panel.
+       Without this registration the class in setuphandlers.py is inert and
+       the uninstall profile is offered as an installable add-on of its own. -->
+  <utility
+      factory=".setuphandlers.HiddenProfiles"
+      name="collective.fragmentsblock-hiddenprofiles"
+      />
+
 
   <include package=".views" />
 

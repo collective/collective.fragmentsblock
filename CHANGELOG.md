@@ -2,6 +2,12 @@
 
 ## 1.0.0a1 (unreleased)
 
+- Register the `INonInstallable` utility that hides the uninstall profile.
+  `HiddenProfiles` was defined in `setuphandlers.py` but never registered in
+  `configure.zcml`, so it hid nothing: harmless while this package has no
+  upgrade profile, and a profile offered as an installable add-on of its own
+  the moment one is scaffolded.
+
 - A fragment block now **names itself with the fragment's title** while blocks
   are dragged. The editor collapses the canvas to one row per block and reads
   each row's identifying line off the rendered block — but a fragment is a
