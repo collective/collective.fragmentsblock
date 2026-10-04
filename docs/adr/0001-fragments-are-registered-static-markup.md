@@ -1,5 +1,10 @@
 # Fragments are registered static markup, not content objects
 
+> Amended by [ADR 0002](0002-the-editor-fetches-the-fragment-list-from-the-server.md):
+> the fragment block fills the registry from the server's `@fragments`
+> service, and a fragment's title lives in its file. Points 1 and 2 below
+> and the "no server round-trip" consequence read accordingly.
+
 A *fragment* is a piece of a design mockup — a contact box, a badge, a
 call-to-action banner — that editors should be able to drop into a page
 as-is. The obvious first reading of "reusable snippet" is "centrally

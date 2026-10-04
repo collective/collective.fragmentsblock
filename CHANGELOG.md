@@ -2,6 +2,16 @@
 
 ## 1.0.0a1 (unreleased)
 
+- The editor needs nothing from a provider add-on any more. The fragment
+  block's `install()` fetches the new `@fragments` service and registers
+  every provider's fragments before the first render; the host awaits it
+  (`plone.blicca.auroraeditor` 1.0.0a3, block-api 1.2, declared on the
+  record by upgrade step 1001). A theme ships its `fragments/*.html` and
+  the `fragments:folder` line, no editor bundle, no record, no rebuild.
+  `IFragmentsProvider` gains `records()`; a fragment's title is its
+  first-line `<!-- title: … -->` comment, else derived from the file name
+  (ADR 0002).
+
 - Add the `fragments:folder` ZCML directive. A provider add-on registers
   its fragments folder with one line in `configure.zcml` and no Python
   code. The folder is resolved relative to the package, checked at

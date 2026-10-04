@@ -533,7 +533,7 @@ source = { editable = "." }
 dependencies = [
     { name = "plone" },
     { name = "plone-blicca-auroraeditor" },
-    { name = "setuptools" },
+    { name = "plone-restapi" },
 ]
 
 [package.optional-dependencies]
@@ -550,11 +550,11 @@ requires-dist = [
     { name = "plone", specifier = ">=6.0" },
     { name = "plone-app-testing", marker = "extra == 'test'" },
     { name = "plone-blicca-auroraeditor", editable = "../plone.blicca.auroraeditor" },
+    { name = "plone-restapi" },
     { name = "plone-testing", marker = "extra == 'test'" },
     { name = "pytest", marker = "extra == 'test'" },
     { name = "pytest-cov", marker = "extra == 'test'" },
     { name = "pytest-plone", marker = "extra == 'test'", specifier = ">=0.5.0" },
-    { name = "setuptools", specifier = "<81" },
 ]
 provides-extras = ["test"]
 
@@ -2738,7 +2738,7 @@ wheels = [
 
 [[package]]
 name = "plone-blicca-auroraeditor"
-version = "1.0.0a2"
+version = "1.0.0a3"
 source = { editable = "../plone.blicca.auroraeditor" }
 dependencies = [
     { name = "plone-api" },
@@ -2747,6 +2747,7 @@ dependencies = [
     { name = "plone-restapi" },
     { name = "plone-volto" },
     { name = "products-cmfplone" },
+    { name = "requests" },
     { name = "setuptools" },
 ]
 
@@ -2761,6 +2762,9 @@ requires-dist = [
     { name = "plone-testing", marker = "extra == 'test'" },
     { name = "plone-volto" },
     { name = "products-cmfplone" },
+    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest-plone", marker = "extra == 'test'", specifier = ">=0.5.0" },
+    { name = "requests" },
     { name = "setuptools" },
 ]
 provides-extras = ["test"]

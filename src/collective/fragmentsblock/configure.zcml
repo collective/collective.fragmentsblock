@@ -53,4 +53,9 @@
       directory="static"
       />
 
+  <!-- The @fragments service the editor fetches its list from. -->
+  <include package=".api" />
+
+  <include package=".upgrades" />
+
 </configure>

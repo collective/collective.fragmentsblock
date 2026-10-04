@@ -42,6 +42,8 @@ class TestSetup:
         assert record.bundle == "++plone++collective.fragmentsblock/fragment-block.js"
         assert record.types == ["fragment"]
         assert record.enabled
+        # the host awaits install() from 1.2 on; the bundle relies on it
+        assert record.block_api == "1.2"
 
     def test_addon_loadable_by_wrapper(self):
         """The wrapper's discovery gates accept the add-on: the committed

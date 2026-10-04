@@ -62,6 +62,39 @@ function renderFragmentHtml(record, variables) {
     )
   );
 }
+const FRAGMENTS_SERVICE = "@fragments";
+async function loadFragments(config2, fetchImpl = (input, init) => fetch(input, init)) {
+  const base = (config2.settings?.apiPath ?? "").replace(/\/+$/, "");
+  const response = await fetchImpl(`${base}/${FRAGMENTS_SERVICE}`, {
+    headers: { Accept: "application/json" },
+    credentials: "same-origin"
+  });
+  if (!response.ok) {
+    throw new Error(`${FRAGMENTS_SERVICE} answered ${response.status}`);
+  }
+  const body = await response.json();
+  const items = Array.isArray(body?.items) ? body.items : [];
+  const registered = [];
+  for (const item of items) {
+    try {
+      registerFragment(config2, item);
+      registered.push(item);
+    } catch (error) {
+      console.warn(
+        "collective.fragmentsblock: dropping a fragment the server sent:",
+        error
+      );
+    }
+  }
+  return registered;
+}
+let loadError = null;
+function setFragmentsLoadError(error) {
+  loadError = error;
+}
+function getFragmentsLoadError() {
+  return loadError;
+}
 const FragmentBlockView = ({ data }) => {
   const record = getFragment(config, data.fragment);
   if (!record) {
@@ -84,11 +117,7 @@ const FragmentBlockEdit = (props) => {
     return /* @__PURE__ */ jsx("div", { className: "block-fragment block-fragment-placeholder", children: /* @__PURE__ */ jsx("p", { className: "fragment-note", children: "Choose a fragment in the block settings." }) });
   }
   if (!getFragment(config, data.fragment)) {
-    return /* @__PURE__ */ jsx("div", { className: "block-fragment block-fragment-placeholder", children: /* @__PURE__ */ jsxs("p", { className: "fragment-note", children: [
-      "The fragment “",
-      String(data.fragment),
-      "” is not registered — its add-on may be uninstalled. The published page renders nothing here."
-    ] }) });
+    return /* @__PURE__ */ jsx("div", { className: "block-fragment block-fragment-placeholder", children: /* @__PURE__ */ jsx("p", { className: "fragment-note", children: getFragmentsLoadError() ? "The fragment list could not be loaded from the server, so this fragment cannot be shown here. Reload the page to try again; the published page is not affected." : `The fragment “${String(data.fragment)}” is not registered — its add-on may be uninstalled. The published page renders nothing here.` }) });
   }
   return /* @__PURE__ */ jsx(FragmentBlockView, { ...props, isEditMode: true });
 };
@@ -186,15 +215,28 @@ const FragmentBlockInfo = {
   icon: FragmentIcon,
   category: "fragment"
 };
-function install(config2) {
+async function install(config2) {
   config2.blocks.blocksConfig.fragment = FragmentBlockInfo;
+  try {
+    await loadFragments(config2);
+    setFragmentsLoadError(null);
+  } catch (error) {
+    console.warn(
+      "collective.fragmentsblock: the fragment list could not be loaded; the picker stays empty:",
+      error
+    );
+    setFragmentsLoadError(error);
+  }
   return config2;
 }
 export {
+  FRAGMENTS_SERVICE,
   FRAGMENT_UTILITY_TYPE,
   install as default,
   getFragment,
+  getFragmentsLoadError,
   listFragments,
+  loadFragments,
   registerFragment,
   renderFragmentHtml
 };

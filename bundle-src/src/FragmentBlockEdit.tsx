@@ -1,7 +1,7 @@
 import config from '@plone/registry';
 import type { BlockEditProps } from './types';
 import FragmentBlockView from './FragmentBlockView';
-import { getFragment } from './fragments';
+import { getFragment, getFragmentsLoadError } from './fragments';
 
 // The picker itself is the sidebar's schema-driven Choice field; the edit
 // surface only mirrors the public rendering, plus honest placeholders for
@@ -22,9 +22,13 @@ const FragmentBlockEdit = (props: BlockEditProps) => {
     return (
       <div className="block-fragment block-fragment-placeholder">
         <p className="fragment-note">
-          The fragment “{String(data.fragment)}” is not registered — its
-          add-on may be uninstalled. The published page renders nothing
-          here.
+          {getFragmentsLoadError()
+            ? 'The fragment list could not be loaded from the server, so ' +
+              'this fragment cannot be shown here. Reload the page to try ' +
+              'again; the published page is not affected.'
+            : `The fragment “${String(data.fragment)}” is not registered — ` +
+              'its add-on may be uninstalled. The published page renders ' +
+              'nothing here.'}
         </p>
       </div>
     );

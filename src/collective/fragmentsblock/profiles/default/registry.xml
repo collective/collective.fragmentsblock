@@ -8,7 +8,8 @@
       prefix="plone.blicca.auroraeditor.blockaddons/collective.fragmentsblock.fragment"
       >
     <value key="bundle">++plone++collective.fragmentsblock/fragment-block.js</value>
-    <value key="block_api">1.0</value>
+    <!-- 1.2: the host awaits install(), which fetches @fragments. -->
+    <value key="block_api">1.2</value>
     <value key="css">++plone++collective.fragmentsblock/fragment-block.css</value>
     <value key="types">
       <element>fragment</element>

@@ -19,6 +19,8 @@ export type FragmentRecord = {
 };
 
 type Registry = {
+  /** The host's mount options land here; `apiPath` is the portal URL. */
+  settings?: { apiPath?: string };
   registerUtility: (options: {
     type: string;
     name: string;
@@ -128,4 +130,63 @@ export function renderFragmentHtml(
     // inherited member here and to nothing on the server.
     Object.hasOwn(values, name) ? escapeHtml(coerce(values[name])) : '',
   );
+}
+
+// --- Loading from the server (ADR 0002) ---------------------------------
+//
+// The fragments are files in provider add-ons, enumerated by the server's
+// `@fragments` service. The block's install() calls this before the editor's
+// first render (the host awaits install, block-api 1.2), so nothing a theme
+// ships for the editor exists any more — no bundle, no record, no rebuild.
+// The request rides the session cookie: the editor page is served by Plone
+// on the same origin, and the service is readable by whoever may view the
+// site, like the pages that render the same markup.
+
+export const FRAGMENTS_SERVICE = '@fragments';
+
+type FetchLike = (
+  input: string,
+  init?: { headers?: Record<string, string>; credentials?: 'same-origin' },
+) => Promise<{ ok: boolean; status: number; json: () => Promise<unknown> }>;
+
+export async function loadFragments(
+  config: Registry,
+  fetchImpl: FetchLike = (input, init) => fetch(input, init),
+): Promise<FragmentRecord[]> {
+  const base = (config.settings?.apiPath ?? '').replace(/\/+$/, '');
+  const response = await fetchImpl(`${base}/${FRAGMENTS_SERVICE}`, {
+    headers: { Accept: 'application/json' },
+    credentials: 'same-origin',
+  });
+  if (!response.ok) {
+    throw new Error(`${FRAGMENTS_SERVICE} answered ${response.status}`);
+  }
+  const body = (await response.json()) as { items?: unknown } | null;
+  const items = Array.isArray(body?.items) ? body.items : [];
+  const registered: FragmentRecord[] = [];
+  for (const item of items) {
+    try {
+      registerFragment(config, item as FragmentRecord);
+      registered.push(item as FragmentRecord);
+    } catch (error) {
+      console.warn(
+        'collective.fragmentsblock: dropping a fragment the server sent:',
+        error,
+      );
+    }
+  }
+  return registered;
+}
+
+// Whether the load failed. The edit placeholder tells a fragment that could
+// not be loaded apart from one that is not registered: the first is a page
+// reload away, the second is an uninstalled add-on.
+let loadError: unknown = null;
+
+export function setFragmentsLoadError(error: unknown) {
+  loadError = error;
+}
+
+export function getFragmentsLoadError(): unknown {
+  return loadError;
 }

@@ -1,13 +1,14 @@
-"""Resolve and render registered fragment markup (server side).
+"""Resolve, enumerate and render registered fragment markup (server side).
 
 A fragment is a static HTML file — typically cut verbatim from a design
-mockup — shipped by a provider add-on. The editor half registers id, title
-and the same markup into ``@plone/registry`` (see ``bundle-src``); this
-module is the classic-rendering counterpart: named ``IFragmentsProvider``
-utilities map fragment ids to the raw HTML, and ``substitute`` mirrors the
-JS ``renderFragmentHtml`` semantics 1:1 so both surfaces emit identical
-markup — ``${var}`` tokens filled from the block's persisted ``variables``
-mapping, missing variables as empty strings, every value HTML-escaped.
+mockup — shipped by a provider add-on. Named ``IFragmentsProvider``
+utilities map fragment ids to the raw HTML. Classic rendering resolves one
+id at a time; the editor fetches ``records()`` through the ``@fragments``
+service when it opens and registers each record into ``@plone/registry``
+(ADR 0002), so both surfaces read the same files. ``substitute`` mirrors the
+JS ``renderFragmentHtml`` semantics 1:1 so both emit identical markup —
+``${var}`` tokens filled from the block's persisted ``variables`` mapping,
+missing variables as empty strings, every value HTML-escaped.
 
 Everything is fail-soft: an unknown id, an unregistered provider or an
 unreadable file degrades to ``None`` (the caller emits an invisible
@@ -34,6 +35,23 @@ _ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]*$")
 
 _TOKEN_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
+# The optional title line: the first thing in the file, before any markup.
+_TITLE_RE = re.compile(r"\A\s*<!--\s*title:\s*(.*?)\s*-->", re.DOTALL)
+
+
+def derived_title(fragment_id):
+    """``contact-box`` -> ``Contact box``; the title when the file has none."""
+    words = " ".join(part for part in re.split(r"[-_]+", fragment_id) if part)
+    return words[:1].upper() + words[1:]
+
+
+def title_of(fragment_id, markup):
+    """The picker title: the ``<!-- title: ... -->`` header, else derived."""
+    match = _TITLE_RE.match(markup)
+    if match and match.group(1):
+        return " ".join(match.group(1).split())
+    return derived_title(fragment_id)
+
 
 @implementer(IFragmentsProvider)
 class FragmentsFolder:
@@ -51,6 +69,24 @@ class FragmentsFolder:
             return path.read_text(encoding="utf-8")
         except OSError:
             return None
+
+    def records(self):
+        found = []
+        for path in sorted(self.directory.glob("*.html")):
+            if not _ID_RE.match(path.stem):
+                logger.warning(
+                    "Fragments folder %s: skipping %s, its name is not a fragment id",
+                    self.directory,
+                    path.name,
+                )
+                continue
+            try:
+                markup = path.read_text(encoding="utf-8")
+            except OSError:
+                logger.exception("Fragments folder %s: cannot read %s", self.directory, path.name)
+                continue
+            found.append({"id": path.stem, "title": title_of(path.stem, markup), "html": markup})
+        return found
 
 
 def resolve(fragment_id):
@@ -72,6 +108,45 @@ def resolve(fragment_id):
         if markup is not None:
             return markup
     return None
+
+
+def records():
+    """Every fragment of every provider, as the ``@fragments`` service lists them.
+
+    Providers are asked in the order ``resolve`` consults them and the first
+    record of an id wins, so the editor's picker and the classic renderer
+    agree about which provider owns a clashing id. A record a provider got
+    wrong (no slug id, no string markup) is dropped with a warning rather
+    than handed to the editor, which could not render it.
+    """
+    seen = set()
+    found = []
+    for _name, provider in sorted(getUtilitiesFor(IFragmentsProvider)):
+        try:
+            provided = list(provider.records())
+        except Exception:
+            logger.exception("Fragments provider %r failed to list its fragments", _name)
+            continue
+        for record in provided:
+            fragment_id = record.get("id") if isinstance(record, dict) else None
+            if (
+                not isinstance(fragment_id, str)
+                or not _ID_RE.match(fragment_id)
+                or not isinstance(record.get("html"), str)
+            ):
+                logger.warning(
+                    "Fragments provider %r: dropping a malformed record %r", _name, record
+                )
+                continue
+            if fragment_id in seen:
+                continue
+            seen.add(fragment_id)
+            found.append({
+                "id": fragment_id,
+                "title": record.get("title") or derived_title(fragment_id),
+                "html": record["html"],
+            })
+    return found
 
 
 def coerce(value):

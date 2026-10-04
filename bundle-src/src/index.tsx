@@ -10,11 +10,15 @@ import './styles.css';
 // conveniences around it.
 export {
   FRAGMENT_UTILITY_TYPE,
+  FRAGMENTS_SERVICE,
   registerFragment,
   getFragment,
   listFragments,
+  loadFragments,
+  getFragmentsLoadError,
   renderFragmentHtml,
 } from './fragments';
+import { loadFragments, setFragmentsLoadError } from './fragments';
 export type { FragmentRecord } from './fragments';
 
 const FragmentBlockInfo = {
@@ -28,8 +32,24 @@ const FragmentBlockInfo = {
 };
 
 // The loader convention (block add-on contract §1): default-export an
-// install function that registers the block and returns the config.
-export default function install(config: any) {
+// install function that registers the block and returns the config. It is
+// async, and the host awaits it (block-api 1.2), because the fragments come
+// from the server: `@fragments` lists every provider's records, and they
+// have to be in the registry before the first render (ADR 0002). A failed
+// load keeps the block — the picker is empty and existing fragment blocks
+// say why — rather than losing the whole block to the host's fail-soft skip.
+export default async function install(config: any) {
   config.blocks.blocksConfig.fragment = FragmentBlockInfo;
+  try {
+    await loadFragments(config);
+    setFragmentsLoadError(null);
+  } catch (error) {
+    console.warn(
+      'collective.fragmentsblock: the fragment list could not be loaded; ' +
+        'the picker stays empty:',
+      error,
+    );
+    setFragmentsLoadError(error);
+  }
   return config;
 }

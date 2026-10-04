@@ -1,0 +1,1 @@
+"""fragments REST API service."""

@@ -4,9 +4,9 @@ A **Fragment** block for the Aurora editor in [Plone](https://plone.org) Blicca.
 
 A fragment is a static piece of HTML, usually cut straight from the design
 mockup: a contact box, a seal, a call-to-action banner, a partner-logo
-strip. Your theme ships it as a file and registers it under an id and a
-title. Editors then pick it from a list and drop it into a page. The markup
-is rendered exactly as it is in the file, both in the editor and on
+strip. Your theme ships it as a file in a folder it registers with one line
+of ZCML. Editors then pick it from a list and drop it into a page. The
+markup is rendered exactly as it is in the file, both in the editor and on
 published pages.
 
 Editors never edit the markup. When the file changes, every page using the
@@ -18,48 +18,43 @@ Add `collective.fragmentsblock` to your project dependencies and install it
 in the Plone add-ons control panel.
 
 Requirements: Plone 6, Python 3.10 or newer, and `plone.blicca.auroraeditor`
-1.0.0a2 or newer.
+1.0.0a3 or newer (block-api 1.2: the editor waits for this block to fetch its
+fragments before it renders).
 
 This package only provides the block. Fragments come from your own add-on,
 typically the theme package. See the next section.
 
 ## Register a fragment
 
-Fragments live in a folder of your add-on, one HTML file per fragment. Both
-the editor and the server read from that same folder.
+Fragments live in a folder of your add-on, one HTML file per fragment. The
+server reads the files when it renders classic pages, and the editor fetches
+the same files from the server when it opens. Nothing is built, bundled or
+copied.
 
 ```
 src/my/theme/
 ├── fragments/
-│   └── contact-box.html
-├── configure.zcml
-└── static/
-    └── fragments.js       <- built from editor-src/
+│   ├── contact-box.html
+│   └── seal.html
+└── configure.zcml
 ```
 
 The file name is the fragment id. Ids must match `^[A-Za-z0-9][A-Za-z0-9_-]*$`
 and are unique across the whole site, so prefix them if more than one
-add-on may provide fragments.
+add-on may provide fragments. A file whose name is not a valid id is skipped
+with a warning.
 
-### 1. Server side
-
-Register the folder in your `configure.zcml`. The server reads the files
-from there when it renders classic pages.
+Register the folder in your `configure.zcml`:
 
 ```xml
 <!-- my/theme/configure.zcml -->
 <configure
     xmlns="http://namespaces.zope.org/zope"
-    xmlns:plone="http://namespaces.plone.org/plone"
     xmlns:fragments="http://namespaces.plone.org/fragmentsblock">
 
-  <fragments:folder directory="fragments" />
+  <include package="collective.fragmentsblock" file="meta.zcml" />
 
-  <plone:static
-      name="my.theme"
-      type="plone"
-      directory="static"
-      />
+  <fragments:folder directory="fragments" />
 
 </configure>
 ```
@@ -68,59 +63,24 @@ from there when it renders classic pages.
 your package name. Pass `name="..."` if you need another one. A folder that
 does not exist is an error at startup, not an empty picker.
 
-### 2. Editor side
+That is all. Restart Plone and the fragments appear in the picker.
 
-The editor needs the same fragments in the browser. Ship a small ES module
-whose default export registers one utility per fragment. Import the HTML
-files with Vite's `?raw` so the file stays the single source:
+### Titles
 
-```ts
-// editor-src/index.ts
-import contactBox from '../src/my/theme/fragments/contact-box.html?raw';
+Editors pick a fragment by its title. Put it in a comment on the first line
+of the file:
 
-export default function install(config) {
-  config.registerUtility({
-    type: 'collective.fragmentsblock.fragment',
-    name: 'contact-box',
-    method: { id: 'contact-box', title: 'Contact box', html: contactBox },
-  });
-  return config;
-}
+```html
+<!-- title: Contact box -->
+<aside class="contact-box">
+  ...
+</aside>
 ```
 
-`id` must equal the file name without `.html`. `title` is what editors see
-in the picker. Build the module to `static/fragments.js` and commit the
-output, so no Node is needed at install time.
-
-If you prefer validation at registration time, the npm package
-`@plone-collective/aurora-fragment-block` exports
-`registerFragment(config, { id, title, html })`, which throws on a missing
-field or an invalid id.
-
-### 3. Tell the editor to load your module
-
-Add an Aurora block add-on record to your GenericSetup profile. It points
-the editor at the module from step 2. Your add-on registers no block of its
-own, so `types` stays empty.
-
-```xml
-<!-- profiles/default/registry.xml -->
-<records
-    interface="plone.blicca.auroraeditor.interfaces.IAuroraBlockAddon"
-    prefix="plone.blicca.auroraeditor.blockaddons/my.theme.fragments"
-    >
-  <value key="bundle">++plone++my.theme/fragments.js</value>
-  <value key="block_api">1.0</value>
-  <value key="enabled">True</value>
-</records>
-```
-
-Reinstall or upgrade your add-on and the fragments appear in the picker.
-
-**After editing a fragment file, rebuild the editor module.** The server
-reads the file on every render, but the editor module has the HTML inlined
-at build time. Until you rebuild, the editor and the published page show
-different markup.
+Without that comment the title is derived from the file name:
+`contact-box.html` becomes "Contact box", `partner_logos.html` becomes
+"Partner logos". The comment is part of the markup and is rendered with it;
+browsers ignore it.
 
 ## Add a fragment to a page
 
@@ -155,9 +115,23 @@ break.
 - **Wrapper.** Both the editor and the server wrap the markup in a
   `<div class="block-fragment">`. Mockup HTML written for a grid or flex
   parent needs to account for that.
+- **The editor fetches `@fragments`.** When the editor opens, the fragment
+  block requests `<site>/@fragments` with the session cookie and registers
+  what comes back before the first render. The list is every provider's
+  `records()`; where two providers use the same id, the one whose name sorts
+  first wins, on both surfaces. If the request fails, the block stays
+  available with an empty picker and existing fragment blocks say so instead
+  of rendering nothing.
 - **Other sources.** A folder of files is the stock provider. For anything
-  else, register a named utility that implements `IFragmentsProvider`. It
-  has one method, `get(fragment_id)`, returning the HTML or `None`.
+  else, register a named utility that implements `IFragmentsProvider`:
+  `get(fragment_id)` returns the HTML or `None`, and `records()` lists every
+  fragment as `{"id", "title", "html"}`.
+- **Registering from JavaScript still works.** An Aurora add-on may register
+  fragments itself, with `registerFragment(config, {id, title, html})` from
+  the npm package `@plone-collective/aurora-fragment-block` or with a bare
+  `config.registerUtility` of type `collective.fragmentsblock.fragment`. The
+  server then needs a matching provider, or the fragment renders only in the
+  editor.
 
 ## Development
 

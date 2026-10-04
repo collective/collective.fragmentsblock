@@ -9,14 +9,12 @@ class ICollectiveFragmentsblockLayer(IDefaultBrowserLayer):
 
 
 class IFragmentsProvider(Interface):
-    """A named utility contributing fragment markup for classic rendering.
+    """A named utility publishing a set of fragments.
 
-    The editor half of a fragment lives in the JS registry (the provider
-    add-on's install function registers id/title/html into
-    ``@plone/registry``); this is its server-side counterpart, so Blicca
-    classic pages render the same file. Register one named utility per
-    provider add-on — ``collective.fragmentsblock.fragments.FragmentsFolder``
-    is the stock implementation over a package directory; the
+    Both surfaces read it: ``fragments.resolve`` renders one fragment on a
+    classic page, the ``@fragments`` service lists them all for the editor.
+    ``collective.fragmentsblock.fragments.FragmentsFolder`` is the stock
+    implementation over a directory of ``<id>.html`` files; the
     ``fragments:folder`` ZCML directive registers one.
     """
 
@@ -27,4 +25,11 @@ class IFragmentsProvider(Interface):
         calling, so an implementation reached that way never sees a path
         traversal. An implementation that may also be called directly is
         responsible for its own bounds.
+        """
+
+    def records():
+        """Return every fragment as a ``{"id", "title", "html"}`` dict.
+
+        ``id`` satisfies the slug rule, ``title`` is what editors pick by,
+        ``html`` is what ``get(id)`` returns.
         """
