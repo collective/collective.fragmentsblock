@@ -16,7 +16,8 @@ class IFragmentsProvider(Interface):
     ``@plone/registry``); this is its server-side counterpart, so Blicca
     classic pages render the same file. Register one named utility per
     provider add-on — ``collective.fragmentsblock.fragments.FragmentsFolder``
-    is the stock implementation over a package directory.
+    is the stock implementation over a package directory; the
+    ``fragments:folder`` ZCML directive registers one.
     """
 
     def get(fragment_id):

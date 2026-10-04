@@ -20,6 +20,7 @@ from plone.app.testing import SITE_OWNER_PASSWORD
 from plone.testing.zope import WSGI_SERVER_FIXTURE
 
 import collective.fragmentsblock
+import collective.fragmentsblock.tests
 
 
 class CollectiveFragmentsblockLayer(PloneSandboxLayer):
@@ -35,6 +36,8 @@ class CollectiveFragmentsblockLayer(PloneSandboxLayer):
         self.loadZCML(package=plone.volto)
         self.loadZCML(package=plone.blicca.auroraeditor)
         self.loadZCML(package=collective.fragmentsblock)
+        # a provider add-on's registration, through the ZCML directive
+        self.loadZCML(package=collective.fragmentsblock.tests, name="fixture.zcml")
 
     def setUpPloneSite(self, portal):
         """Set up Plone site."""

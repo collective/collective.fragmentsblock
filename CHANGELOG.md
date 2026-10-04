@@ -2,6 +2,11 @@
 
 ## 1.0.0a1 (unreleased)
 
+- Add the `fragments:folder` ZCML directive. A provider add-on registers
+  its fragments folder with one line in `configure.zcml` and no Python
+  code. The folder is resolved relative to the package, checked at
+  startup, and registered under the package name unless `name` is given.
+
 - Register the `INonInstallable` utility that hides the uninstall profile.
   `HiddenProfiles` was defined in `setuphandlers.py` but never registered in
   `configure.zcml`, so it hid nothing: harmless while this package has no

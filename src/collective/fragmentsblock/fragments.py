@@ -39,15 +39,7 @@ _TOKEN_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 class FragmentsFolder:
     """The stock provider: one ``<fragment_id>.html`` file per fragment.
 
-    Point it at the directory of verbatim mockup files inside the provider
-    package — the same files whose ``?raw`` imports the provider's editor
-    bundle registers — and register it as a named utility::
-
-        <utility
-            name="my.theme"
-            provides="collective.fragmentsblock.interfaces.IFragmentsProvider"
-            component="my.theme.fragments.provider"
-            />
+    Registered by the ``fragments:folder`` ZCML directive (``zcml.py``).
     """
 
     def __init__(self, directory):

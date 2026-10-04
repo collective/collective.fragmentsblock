@@ -1,0 +1,17 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+  <meta:directives namespace="http://namespaces.plone.org/fragmentsblock">
+
+    <!-- <fragments:folder directory="fragments" /> registers a directory of
+         <id>.html files as a named IFragmentsProvider utility. -->
+    <meta:directive
+        name="folder"
+        schema=".zcml.IFragmentsFolderDirective"
+        handler=".zcml.fragments_folder"
+        />
+
+  </meta:directives>
+
+</configure>

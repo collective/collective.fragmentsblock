@@ -1,7 +1,5 @@
 """Tests for the fragment block server renderer (@@aurora-block-fragment)."""
 
-from pathlib import Path
-
 import pytest
 from plone import api
 from plone.app.testing import setRoles
@@ -10,13 +8,10 @@ from plone.blicca.auroraeditor import SOMERSAULT_BLOCK_ID
 from plone.blicca.auroraeditor import SOMERSAULT_BLOCK_TYPE
 from plone.blicca.auroraeditor.interfaces import IPloneBliccaAuroraeditorLayer
 from plone.restapi.behaviors import IBlocks
-from zope.component import getGlobalSiteManager
 from zope.component import getMultiAdapter
 from zope.interface import alsoProvides
 
-from collective.fragmentsblock.fragments import FragmentsFolder
 from collective.fragmentsblock.interfaces import ICollectiveFragmentsblockLayer
-from collective.fragmentsblock.interfaces import IFragmentsProvider
 from collective.fragmentsblock.testing import INTEGRATION_TESTING
 
 
@@ -57,12 +52,6 @@ class TestFragmentBlockRendering:
         self.page = api.content.create(
             container=self.portal, type="Document", id="page", title="A page"
         )
-        # a provider add-on's registration, as its ZCML would make it
-        gsm = getGlobalSiteManager()
-        provider = FragmentsFolder(Path(__file__).parent / "fragments")
-        gsm.registerUtility(provider, IFragmentsProvider, name="test.fixture")
-        yield
-        gsm.unregisterUtility(provider, IFragmentsProvider, name="test.fixture")
 
     def _render(self, obj):
         view = getMultiAdapter((obj, self.request), name="aurora-blocks-view")

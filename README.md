@@ -32,7 +32,6 @@ the editor and the server read from that same folder.
 src/my/theme/
 ├── fragments/
 │   └── contact-box.html
-├── fragments.py
 ├── configure.zcml
 └── static/
     └── fragments.js       <- built from editor-src/
@@ -44,31 +43,30 @@ add-on may provide fragments.
 
 ### 1. Server side
 
-Point a `FragmentsFolder` at the folder and register it as a named utility.
-The server uses it to render fragments on classic pages.
-
-```python
-# my/theme/fragments.py
-from pathlib import Path
-from collective.fragmentsblock.fragments import FragmentsFolder
-
-provider = FragmentsFolder(Path(__file__).parent / "fragments")
-```
+Register the folder in your `configure.zcml`. The server reads the files
+from there when it renders classic pages.
 
 ```xml
 <!-- my/theme/configure.zcml -->
-<utility
-    name="my.theme"
-    provides="collective.fragmentsblock.interfaces.IFragmentsProvider"
-    component="my.theme.fragments.provider"
-    />
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    xmlns:fragments="http://namespaces.plone.org/fragmentsblock">
 
-<plone:static
-    name="my.theme"
-    type="plone"
-    directory="static"
-    />
+  <fragments:folder directory="fragments" />
+
+  <plone:static
+      name="my.theme"
+      type="plone"
+      directory="static"
+      />
+
+</configure>
 ```
+
+`directory` is relative to your package. The folder is registered under
+your package name. Pass `name="..."` if you need another one. A folder that
+does not exist is an error at startup, not an empty picker.
 
 ### 2. Editor side
 
@@ -157,6 +155,9 @@ break.
 - **Wrapper.** Both the editor and the server wrap the markup in a
   `<div class="block-fragment">`. Mockup HTML written for a grid or flex
   parent needs to account for that.
+- **Other sources.** A folder of files is the stock provider. For anything
+  else, register a named utility that implements `IFragmentsProvider`. It
+  has one method, `get(fragment_id)`, returning the HTML or `None`.
 
 ## Development
 
