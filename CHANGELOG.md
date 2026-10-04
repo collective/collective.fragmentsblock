@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0a1 (unreleased)
+## 1.0.0a1 (2026-10-04)
 
 - The editor needs nothing from a provider add-on any more. The fragment
   block's `install()` fetches the new `@fragments` service and registers
