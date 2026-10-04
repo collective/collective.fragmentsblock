@@ -12,6 +12,7 @@ class HiddenProfiles:
         """Return list of profiles that should not be available for install."""
         return [
             "collective.fragmentsblock:uninstall",
+            "collective.fragmentsblock.upgrades:1001",
         ]
 
 

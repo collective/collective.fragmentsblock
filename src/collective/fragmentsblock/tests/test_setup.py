@@ -76,6 +76,7 @@ class TestSetup:
             for name in getattr(utility, "getNonInstallableProfiles", list)()
         ]
         assert "collective.fragmentsblock:uninstall" in hidden
+        assert "collective.fragmentsblock.upgrades:1001" in hidden
 
 
 class TestUninstall:
