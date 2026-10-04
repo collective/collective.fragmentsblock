@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0a2 (unreleased)
+
+
+- Nothing changed yet.
+
+
 ## 1.0.0a1 (2026-10-04)
 
 - The editor needs nothing from a provider add-on any more. The fragment

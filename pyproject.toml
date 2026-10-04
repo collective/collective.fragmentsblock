@@ -1,6 +1,6 @@
 [project]
 name = "collective.fragmentsblock"
-version = "1.0.0a1"
+version = "1.0.0a2.dev0"
 description = "Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
 readme = "README.md"
 requires-python = ">=3.10"
