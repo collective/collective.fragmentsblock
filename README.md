@@ -1,87 +1,84 @@
 # collective.fragmentsblock
 
-An **Aurora block add-on** for [Plone](https://plone.org): the **fragment
-block** (`@type: fragment`) drops registered **design fragments** — static
-pieces of markup, typically cut verbatim from a design mockup — into any
-Aurora-edited page. A fragment is *not* content: it is an HTML file shipped
-by an add-on (usually the site's theme/brand package), registered under an
-id and a title, picked by editors from a list, and rendered exactly as it
-is in the file.
+A **Fragment** block for the Aurora editor in [Plone](https://plone.org) Blicca.
 
-Typical uses: a contact box, a badge or seal, a call-to-action banner, a
-partner-logo strip — any piece of the design that should be insertable
-as-is, maintained by developers in one file, and updated everywhere on the
-next deployment.
+A fragment is a static piece of HTML, usually cut straight from the design
+mockup: a contact box, a seal, a call-to-action banner, a partner-logo
+strip. Your theme ships it as a file and registers it under an id and a
+title. Editors then pick it from a list and drop it into a page. The markup
+is rendered exactly as it is in the file, both in the editor and on
+published pages.
 
-## How it works
+Editors never edit the markup. When the file changes, every page using the
+fragment updates on the next deployment.
 
-**Aurora-first.** The registration mechanism is the shared
-`@plone/registry` singleton — the same `config` object every Aurora block
-add-on's install function receives, in Aurora proper and in the Blicca
-editor alike. A provider add-on registers one utility per fragment; the
-fragment block enumerates them for its sidebar picker
-(`type: collective.fragmentsblock.fragment`) and its view renders the
-record's `html` client-side, as-is. No server round-trip, no derived
-fields, no transformers.
+## Installation
 
-**Templates, when needed.** The markup may contain `${name}` tokens,
-filled from the block's persisted `variables` mapping — missing variables
-render as empty strings and every value is HTML-escaped. Markup without
-tokens passes through byte-for-byte. Values arrive as JSON and are coerced
-identically on both surfaces:
+Add `collective.fragmentsblock` to your project dependencies and install it
+in the Plone add-ons control panel.
 
-| Value | Renders as |
-| --- | --- |
-| string | itself |
-| `true` / `false` | `true` / `false` |
-| number | JavaScript's spelling (`1.0` → `1`, `2.5` → `2.5`) |
-| `null`, missing | empty |
-| array, object | empty (unsupported) |
+Requirements: Plone 6, Python 3.10 or newer, and `plone.blicca.auroraeditor`
+1.0.0a2 or newer.
 
-A variable is always escaped, so it can never inject markup. The
-**fragment file itself is trusted code**, not sanitized content: it is
-shipped by an add-on, and a `<script>` in it executes on the published
-page (the editor's client-side rendering leaves it inert — one more reason
-to keep fragments declarative).
+This package only provides the block. Fragments come from your own add-on,
+typically the theme package. See the next section.
 
-> **Known limit.** There is no editor UI for variables yet: a block's
-> `variables` mapping is settable through the REST API or a migration, and
-> renders correctly on both surfaces, but the sidebar offers only the
-> fragment picker. Giving fragments a declared variable schema (and with
-> it generated sidebar fields) is the natural next step; until then, a
-> fragment whose values differ per placement is better shipped as one
-> fragment per variant.
+## Register a fragment
 
-**Blicca classic pages.** The server renderer `@@aurora-block-fragment`
-renders the same file through a named `IFragmentsProvider` utility, with
-identical substitution semantics — one file, two renderers, parity by
-construction. Both surfaces wrap the markup in a single
-`<div class="block-fragment">`; the fragment's own root element sits
-inside it, so mockup HTML written for a grid or flex parent needs that
-wrapper accounted for.
-
-**Fail-soft.** An unknown id, an uninstalled provider, or a
-traversal-shaped id degrades to an invisible
-`block-fragment-unresolved` placeholder — never a broken page. In the
-editor the gap is shown honestly instead.
-
-## Providing fragments
-
-A provider add-on keeps its fragments as plain HTML files in one folder of
-its Python package — the single source both halves read:
+Fragments live in a folder of your add-on, one HTML file per fragment. Both
+the editor and the server read from that same folder.
 
 ```
 src/my/theme/
 ├── fragments/
-│   └── contact-box.html      ← verbatim from the design mockup
-└── fragments.py
+│   └── contact-box.html
+├── fragments.py
+├── configure.zcml
+└── static/
+    └── fragments.js       <- built from editor-src/
 ```
 
-**Editor half** — in the add-on's Aurora install function (its
-`bundle-src` imports the same files via Vite `?raw`):
+The file name is the fragment id. Ids must match `^[A-Za-z0-9][A-Za-z0-9_-]*$`
+and are unique across the whole site, so prefix them if more than one
+add-on may provide fragments.
+
+### 1. Server side
+
+Point a `FragmentsFolder` at the folder and register it as a named utility.
+The server uses it to render fragments on classic pages.
+
+```python
+# my/theme/fragments.py
+from pathlib import Path
+from collective.fragmentsblock.fragments import FragmentsFolder
+
+provider = FragmentsFolder(Path(__file__).parent / "fragments")
+```
+
+```xml
+<!-- my/theme/configure.zcml -->
+<utility
+    name="my.theme"
+    provides="collective.fragmentsblock.interfaces.IFragmentsProvider"
+    component="my.theme.fragments.provider"
+    />
+
+<plone:static
+    name="my.theme"
+    type="plone"
+    directory="static"
+    />
+```
+
+### 2. Editor side
+
+The editor needs the same fragments in the browser. Ship a small ES module
+whose default export registers one utility per fragment. Import the HTML
+files with Vite's `?raw` so the file stays the single source:
 
 ```ts
-import contactBox from '../../src/my/theme/fragments/contact-box.html?raw';
+// editor-src/index.ts
+import contactBox from '../src/my/theme/fragments/contact-box.html?raw';
 
 export default function install(config) {
   config.registerUtility({
@@ -93,141 +90,96 @@ export default function install(config) {
 }
 ```
 
-The record's `id` must equal the registration name (enumeration drops
-utility names) and must be a slug matching
-`^[A-Za-z0-9][A-Za-z0-9_-]*$` — the server resolves it to `<id>.html`, so
-a dotted or spaced id would work in the editor and resolve to nothing on
-a published page. Records that break the rule are dropped from the picker
-with a console warning rather than silently. `title` is the picker label,
-and the list is sorted by it.
+`id` must equal the file name without `.html`. `title` is what editors see
+in the picker. Build the module to `static/fragments.js` and commit the
+output, so no Node is needed at install time.
 
-Ids share **one flat, site-wide namespace** across all providers: the
-server asks providers in utility-name order and takes the first hit, and
-the client-side registry is keyed by name, so a second provider reusing an
-id shadows the first. Prefix them if a site may install several providers.
+If you prefer validation at registration time, the npm package
+`@plone-collective/aurora-fragment-block` exports
+`registerFragment(config, { id, title, html })`, which throws on a missing
+field or an invalid id.
 
-Registering through the raw registry needs no dependency on this package;
-the npm package `@plone-collective/aurora-fragment-block` also exports
-`registerFragment(config, record)`, which throws on a missing field or an
-invalid id instead of failing later.
+### 3. Tell the editor to load your module
 
-> **Rebuild the provider's bundle after editing a fragment file.** The
-> classic renderer re-reads the file on every render, but the editor half
-> inlines it at build time through the `?raw` import — shipping only the
-> changed `.html` leaves the two surfaces disagreeing until `pnpm build`
-> runs in the provider's `bundle-src`.
-
-**Server half** — one named utility over the same folder:
-
-```python
-# my/theme/fragments.py
-from pathlib import Path
-from collective.fragmentsblock.fragments import FragmentsFolder
-
-provider = FragmentsFolder(Path(__file__).parent / "fragments")
-```
+Add an Aurora block add-on record to your GenericSetup profile. It points
+the editor at the module from step 2. Your add-on registers no block of its
+own, so `types` stays empty.
 
 ```xml
-<utility
-    name="my.theme"
-    provides="collective.fragmentsblock.interfaces.IFragmentsProvider"
-    component="my.theme.fragments.provider"
-    />
+<!-- profiles/default/registry.xml -->
+<records
+    interface="plone.blicca.auroraeditor.interfaces.IAuroraBlockAddon"
+    prefix="plone.blicca.auroraeditor.blockaddons/my.theme.fragments"
+    >
+  <value key="bundle">++plone++my.theme/fragments.js</value>
+  <value key="block_api">1.0</value>
+  <value key="enabled">True</value>
+</records>
 ```
 
-## Using the block
+Reinstall or upgrade your add-on and the fragments appear in the picker.
 
-Editors insert a **Fragment** block via the slash menu and choose the
-fragment in the block settings — the list shows every registered
-fragment's title. The markup renders immediately (it's already in the
-browser), and a redeployed fragment file updates every page embedding it.
+**After editing a fragment file, rebuild the editor module.** The server
+reads the file on every render, but the editor module has the HTML inlined
+at build time. Until you rebuild, the editor and the published page show
+different markup.
 
-The picker is a plain schema field carrying `choices`, so it renders as a
-select wherever the host registers a widget for that slot (Blicca does).
-A host that registers none degrades the field to a text input — the block
-still works, the editor just types the fragment id.
+## Add a fragment to a page
 
-### Width and background
+1. Open the page in the Aurora editor.
+2. Type `/` and choose **Fragment** from the slash menu.
+3. In the block settings, pick the fragment from the **Fragment** list.
 
-The same settings form carries the two **placement** controls, because a
-fragment is a piece of a design rather than a whole one: where it sits is
-the page's business, not the file's. A contact box wants the narrow
-column; a divider wants the full bleed; the same file may want both on
-two different pages.
+The fragment renders immediately. Two more settings control placement:
 
-- **Block width** — `narrow | default | layout | full`, defaulting to
-  `default` (the width fragment blocks already rendered at, so existing
-  content is unchanged).
-- **Background** — a *named* palette slot, never a color: the author picks
-  `Grey`, `Accent` or `Dark`, and the theme decides what those look like
-  through the `--aurora-block-bg-*` custom properties.
+- **Block width**: `narrow`, `default`, `layout` or `full`. Defaults to
+  `default`.
+- **Background**: a named colour slot from your theme's palette, such as
+  `Grey` or `Accent`. The field only appears if the theme registers a
+  palette.
 
-Both are Aurora **style fields** (`styleField: true`), which is the whole
-of the wiring: the editor resolves them into a
-`has--block-width--<value>` / `has--backgroundColor--<value>` class plus
-inline custom properties on the block wrapper, and the classic renderer
-stamps the identical pair — neither this block's view components nor its
-server renderer touch them. Consequently the background paints the
-*wrapper*, outside the `<div class="block-fragment">`, and a fragment
-whose own markup sets a background of its own simply covers it.
+Both paint the block wrapper around the fragment, not the fragment itself.
 
-The background choices are read from the host's registered palette
-(a `styleFieldDefinition` registry utility named `backgroundColor`) rather
-than hardcoded, so the slots always match what the host can actually
-render — and on a host that registers none, the field is omitted instead
-of offering a select whose every option resolves to nothing.
+If a fragment's add-on gets uninstalled, the editor shows a note in place
+of the block and the published page renders nothing there. Pages never
+break.
 
-> Deliberately **no** `defaultBlockWidth`. Declaring one alongside the
-> schema field is a contradiction: the style field wins and the default is
-> silently dropped (block add-on contract §1.4). Fragment blocks created
-> outside the editor — REST API, migration, test fixture — carry no
-> `blockWidth` and render at `default`; an upgrade step that wants another
-> width has to write the key itself.
+## Good to know
 
-## Repository layout
-
-One repo, two ecosystems, per the Blicca block add-on contract
-(`docs/design/aurora-block-addon-contract.md` and
-`docs/adr/0013-block-addons-extension-point.md` in
-`plone.blicca.auroraeditor`, which the `§` references in this package's
-docstrings point at):
-
-- `src/collective/fragmentsblock/` — the Plone add-on: the
-  `@@aurora-block-fragment` server renderer, the `IFragmentsProvider`
-  registration point, GenericSetup profiles with the `IAuroraBlockAddon`
-  registry record, and the **committed** editor bundle under `static/`
-  (no Node needed at install time).
-- `bundle-src/` — the editor half, a standalone Aurora block npm package
-  (`@plone-collective/aurora-fragment-block`, to be released to npm): the
-  block registration, the fragment registry conventions, and the
-  substitution renderer. The canonical Vite library build keeps the shared
-  singletons (`react`, `@plone/registry`, …) external and emits the
-  scope-wrapped CSS in the same build.
-
-## Installation
-
-Add `collective.fragmentsblock` to your project dependencies and install it
-via the Plone add-ons control panel. Requires Plone >= 6.0, Python >= 3.10
-and `plone.blicca.auroraeditor` >= 1.0.0a2 (block-api 1.0).
+- **Fragment HTML is trusted.** It ships with your add-on and is not
+  sanitised. A `<script>` in it runs on the published page.
+- **Variables.** Markup may contain `${name}` tokens. They are filled from
+  the block's `variables` mapping, HTML-escaped, with missing names
+  rendered empty. There is no editor UI for this yet. The mapping can be
+  set through the REST API or an upgrade step. For now, if a fragment
+  needs different values on different pages, ship one fragment per
+  variant.
+- **Wrapper.** Both the editor and the server wrap the markup in a
+  `<div class="block-fragment">`. Mockup HTML written for a grid or flex
+  parent needs to account for that.
 
 ## Development
 
-Rebuild the committed editor bundle after changing `bundle-src/`:
+The editor half lives in `bundle-src/` and is built into the Python
+package's `static/` folder. The build output is committed.
 
 ```shell
 cd bundle-src
 pnpm install
-pnpm build   # -> static/fragment-block.{js,js.map,css} in the Python package
-pnpm test    # vitest suite for the registry conventions and renderers
+pnpm build
+pnpm test
 ```
 
-Run the tests from the Plone project environment that has this package
-installed as an editable source:
+Python tests:
 
 ```shell
-uv run --no-sync pytest sources/collective.fragmentsblock
+uv run --extra test pytest
 ```
 
 ## License
 
-The project is licensed under GPLv2 (the npm package under MIT).
+GPLv2 for the Python package, MIT for the npm package.
+
+## Author
+
+Maik Derstappen, [derico](https://derico.de), <md@derico.de>
