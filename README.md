@@ -157,4 +157,4 @@ GPLv2 for the Python package, MIT for the npm package.
 
 ## Author
 
-Maik Derstappen, [derico](https://derico.de), <md@derico.de>
+Maik Derstappen, [derico.de](https://derico.de), <md@derico.de>
