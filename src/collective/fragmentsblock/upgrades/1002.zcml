@@ -1,0 +1,27 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="collective.fragmentsblock">
+
+  <genericsetup:registerProfile
+      name="1002"
+      title="collective.fragmentsblock: upgrade to 1002"
+      directory="1002"
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+  <genericsetup:upgradeSteps
+      source="1001"
+      destination="1002"
+      profile="collective.fragmentsblock:default">
+
+    <genericsetup:upgradeDepends
+        title="Declare block-api 2.0 on the fragment block record"
+        description="The Plate 53 host stamps block-api 2.0; a 1.x declaration is skipped."
+        import_profile="collective.fragmentsblock.upgrades:1002"
+        import_steps="plone.app.registry"
+        />
+
+  </genericsetup:upgradeSteps>
+
+</configure>

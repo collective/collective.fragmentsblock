@@ -17,9 +17,9 @@ fragment updates on the next deployment.
 Add `collective.fragmentsblock` to your project dependencies and install it
 in the Plone add-ons control panel.
 
-Requirements: Plone 6, Python 3.10 or newer, and `plone.blicca.auroraeditor`
-1.0.0a3 or newer (block-api 1.2: the editor waits for this block to fetch its
-fragments before it renders).
+Requirements: Plone 6, Python 3.10 or newer, and a `plone.blicca.auroraeditor`
+that ships block-api 2.0, the Plate 53 editor. The editor waits for this
+block to fetch its fragments before it renders.
 
 This package only provides the block. Fragments come from your own add-on,
 typically the theme package. See the next section.

@@ -2,8 +2,9 @@
 
 ## 1.0.0a3 (unreleased)
 
-
-- Nothing changed yet.
+- Declare block-api 2.0 for the Plate 53 editor (upgrade step 1002). A 2.0
+  host skips every 1.x declaration. The bundle needs no rebuild: it imports
+  none of the `platejs` names 2.0 removed.
 
 
 ## 1.0.0a2 (2026-10-08)

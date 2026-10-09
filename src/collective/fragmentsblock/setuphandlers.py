@@ -13,6 +13,7 @@ class HiddenProfiles:
         return [
             "collective.fragmentsblock:uninstall",
             "collective.fragmentsblock.upgrades:1001",
+            "collective.fragmentsblock.upgrades:1002",
         ]
 
 
