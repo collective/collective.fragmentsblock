@@ -1,0 +1,31 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="collective.fragmentsblock">
+
+  <genericsetup:registerProfile
+      name="1003"
+      title="collective.fragmentsblock: upgrade to 1003"
+      directory="1003"
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+  <genericsetup:upgradeSteps
+      source="1002"
+      destination="1003"
+      profile="collective.fragmentsblock:default">
+
+    <genericsetup:upgradeStep
+        title="Delete the block_api record"
+        description="Block add-ons are checked by the names their bundles import (ADR 0024): delete the fragment block&#39;s orphaned block_api record."
+        handler=".v1003.upgrade"
+        />
+
+    <genericsetup:upgradeDepends
+        title="Apply profile version 1003"
+        import_profile="collective.fragmentsblock.upgrades:1003"
+        />
+
+  </genericsetup:upgradeSteps>
+
+</configure>

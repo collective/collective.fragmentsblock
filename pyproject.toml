@@ -25,9 +25,10 @@ keywords = ["Plone", "CMS"]
 
 dependencies = [
     "Plone>=6.0",
-    # 1.0.0a3 awaits an add-on's install() (block-api 1.2); the fragment
-    # block fetches its list before the first render.
-    "plone.blicca.auroraeditor>=1.0.0a3",
+    # 1.0.0a4 checks block add-ons by the names their bundles import and
+    # drops block_api from the registration record (ADR 0024); upgrade
+    # step 1003 deletes this add-on's own orphaned record.
+    "plone.blicca.auroraeditor>=1.0.0a4",
     "plone.restapi",
 ]
 

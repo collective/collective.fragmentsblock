@@ -1,4 +1,5 @@
-"""Upgrade step 1001 -> 1002: the fragment block record declares block-api 2.0."""
+"""Upgrade step 1001 -> 1002: the retired field it used to declare is gone,
+so this step now only reaches the profile version (ADR 0024)."""
 
 import pytest
 from plone import api
@@ -18,13 +19,7 @@ class TestUpgrade1002:
         self.portal = integration["portal"]
         setRoles(self.portal, TEST_USER_ID, ["Manager"])
         self.setup_tool = self.portal.portal_setup
-        # A site at 1001: the record declares 1.2.
-        api.portal.set_registry_record(f"{PREFIX}.block_api", "1.2")
         self.setup_tool.setLastVersionForProfile(PROFILE, "1001")
-
-    def test_declares_block_api_2_0(self):
-        self.setup_tool.upgradeProfile(PROFILE, dest="1002")
-        assert api.portal.get_registry_record(f"{PREFIX}.block_api") == "2.0"
 
     def test_the_block_loads_again(self):
         self.setup_tool.upgradeProfile(PROFILE, dest="1002")
