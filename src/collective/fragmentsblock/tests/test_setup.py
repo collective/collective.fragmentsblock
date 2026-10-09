@@ -61,24 +61,35 @@ class TestSetup:
         assert status.css_url
 
     def test_the_hidden_profiles_utility_is_registered(self):
-        """`HiddenProfiles` only hides anything once ZCML registers it.
+        """`HiddenProfiles` only hides anything once ZCML registers it, and
+        every upgrade profile it registers must be in that list.
 
         The add-ons control panel reads `INonInstallable` from the utility
         registry, never the class: unregistered, the list in setuphandlers.py
         is inert and every EXTENSION profile this package registers -- the
         uninstall one today, a scaffolded upgrade profile tomorrow -- is
-        offered as an installable add-on.
+        offered as an installable add-on. Checking every registered
+        `collective.fragmentsblock.upgrades:*` profile, not just one, means a
+        later scaffolded step that forgets to hide itself fails here.
         """
         from plone.base.interfaces import INonInstallable
         from zope.component import getAllUtilitiesRegisteredFor
 
-        hidden = [
+        hidden = {
             name
             for utility in getAllUtilitiesRegisteredFor(INonInstallable)
             for name in getattr(utility, "getNonInstallableProfiles", list)()
-        ]
+        }
         assert "collective.fragmentsblock:uninstall" in hidden
-        assert "collective.fragmentsblock.upgrades:1001" in hidden
+
+        setup_tool = api.portal.get_tool("portal_setup")
+        registered = {
+            info["id"]
+            for info in setup_tool.listProfileInfo()
+            if info["id"].startswith("collective.fragmentsblock.upgrades:")
+        }
+        assert registered, "no upgrade profile is registered at all"
+        assert registered <= hidden
 
 
 class TestUninstall:

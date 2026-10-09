@@ -14,6 +14,7 @@ class HiddenProfiles:
             "collective.fragmentsblock:uninstall",
             "collective.fragmentsblock.upgrades:1001",
             "collective.fragmentsblock.upgrades:1002",
+            "collective.fragmentsblock.upgrades:1003",
         ]
 
 

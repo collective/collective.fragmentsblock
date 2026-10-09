@@ -21,11 +21,6 @@
         handler=".v1003.upgrade"
         />
 
-    <genericsetup:upgradeDepends
-        title="Apply profile version 1003"
-        import_profile="collective.fragmentsblock.upgrades:1003"
-        />
-
   </genericsetup:upgradeSteps>
 
 </configure>
