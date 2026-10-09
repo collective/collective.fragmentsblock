@@ -12,10 +12,7 @@ RECORD = "plone.blicca.auroraeditor.blockaddons/collective.fragmentsblock.fragme
 
 
 def upgrade(context):
-    """Block add-ons are checked by the names their bundles import (ADR 0024): delete the fragment block's orphaned block_api record.
-
-    Upgrade from profile version 1002 to 1003.
-    """
+    """Delete the orphaned block_api record (1002 -> 1003)."""
     logger.info("Running upgrade step: Delete the block_api record")
     registry = getUtility(IRegistry)
     if RECORD in registry.records:
