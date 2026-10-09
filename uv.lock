@@ -528,7 +528,7 @@ wheels = [
 
 [[package]]
 name = "collective-fragmentsblock"
-version = "1.0.0a1"
+version = "1.0.0a4.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "plone" },
@@ -2738,10 +2738,11 @@ wheels = [
 
 [[package]]
 name = "plone-blicca-auroraeditor"
-version = "1.0.0a3"
+version = "1.0.0a4"
 source = { editable = "../plone.blicca.auroraeditor" }
 dependencies = [
     { name = "plone-api" },
+    { name = "plone-app-upgrade" },
     { name = "plone-browserlayer" },
     { name = "plone-locking" },
     { name = "plone-restapi" },
@@ -2756,6 +2757,7 @@ requires-dist = [
     { name = "plone-api" },
     { name = "plone-app-contenttypes", marker = "extra == 'test'" },
     { name = "plone-app-testing", marker = "extra == 'test'" },
+    { name = "plone-app-upgrade" },
     { name = "plone-browserlayer" },
     { name = "plone-locking" },
     { name = "plone-restapi", specifier = ">=9.8.0" },

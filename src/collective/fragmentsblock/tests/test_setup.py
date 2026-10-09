@@ -42,13 +42,15 @@ class TestSetup:
         assert record.bundle == "++plone++collective.fragmentsblock/fragment-block.js"
         assert record.types == ["fragment"]
         assert record.enabled
-        # 2.0: the Plate 53 host; it still awaits install(), which the bundle relies on
-        assert record.block_api == "2.0"
+        # block_api is retired (ADR 0024): the record no longer carries it.
+        assert (
+            "plone.blicca.auroraeditor.blockaddons/collective.fragmentsblock.fragment.block_api"
+            not in registry.records
+        )
 
     def test_addon_loadable_by_wrapper(self):
         """The wrapper's discovery gates accept the add-on: the committed
-        bundle and CSS resolve as ++plone++ resources and the declared
-        block_api is compatible with the host."""
+        bundle and CSS resolve as ++plone++ resources."""
         from plone.blicca.auroraeditor import blockaddons
 
         statuses = {s.name: s for s in blockaddons.evaluate(self.portal)}

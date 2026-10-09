@@ -4,6 +4,8 @@ import pytest
 from plone import api
 from plone.app.testing import setRoles
 from plone.app.testing import TEST_USER_ID
+from plone.registry import field
+from plone.registry import Record
 from plone.registry.interfaces import IRegistry
 from zope.component import getUtility
 
@@ -20,11 +22,13 @@ class TestUpgrade1001:
         self.portal = integration["portal"]
         setRoles(self.portal, TEST_USER_ID, ["Manager"])
         self.setup_tool = self.portal.portal_setup
-        # A site installed when the record declared 1.0.
-        api.portal.set_registry_record(RECORD, "1.0")
+        registry = getUtility(IRegistry)
+        # A site installed when the retired field still declared 1.0; the
+        # field is gone, so a fresh install no longer creates this record.
+        registry.records[RECORD] = Record(field.TextLine(title="old"), "1.0")
         self.setup_tool.setLastVersionForProfile(PROFILE, "1000")
 
-    def test_declares_block_api_1_2(self):
+    def test_bumps_the_legacy_record_to_1_2(self):
         self.setup_tool.upgradeProfile(PROFILE, dest="1001")
         assert api.portal.get_registry_record(RECORD) == "1.2"
 
