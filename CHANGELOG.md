@@ -2,6 +2,9 @@
 
 ## 1.0.0a4 (unreleased)
 
+- Update transitive brace-expansion to 2.1.7 to fix its recursion and
+  quadratic-expansion denial-of-service advisories.
+
 - Drop the retired `block_api` from the fragment block record; needs
   `plone.blicca.auroraeditor` 1.0.0a4 (upgrade step 1003 deletes a
   left-over record).
