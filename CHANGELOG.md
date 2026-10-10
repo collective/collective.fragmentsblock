@@ -6,6 +6,9 @@
   `plone.blicca.auroraeditor` 1.0.0a4 (upgrade step 1003 deletes a
   left-over record).
 
+- pre-commit leaves build output and scaffold metadata alone. The bundle
+  gets a `typecheck` script (`tsc --noEmit`).
+
 
 ## 1.0.0a3 (2026-10-10)
 
