@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0a4 (unreleased)
+## 1.0.0a4 (2026-10-12)
 
 - Update transitive brace-expansion to 2.1.7 to fix its recursion and
   quadratic-expansion denial-of-service advisories.
