@@ -128,7 +128,7 @@ break.
   fragment as `{"id", "title", "html"}`.
 - **Registering from JavaScript still works.** An Aurora add-on may register
   fragments itself, with `registerFragment(config, {id, title, html})` from
-  the npm package `@plone-collective/aurora-fragment-block` or with a bare
+  the npm package `@plone-collective/plone-fragment-block` or with a bare
   `config.registerUtility` of type `collective.fragmentsblock.fragment`. The
   server then needs a matching provider, or the fragment renders only in the
   editor.

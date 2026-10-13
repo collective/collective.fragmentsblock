@@ -3,7 +3,9 @@
 ## 1.0.0a5 (unreleased)
 
 
-- Nothing changed yet.
+- Rename the editor's npm package to `@plone-collective/plone-fragment-block`
+  (was `@plone-collective/aurora-fragment-block`), the `plone-<name>-block`
+  naming Aurora block packages follow.
 
 
 ## 1.0.0a4 (2026-10-12)
