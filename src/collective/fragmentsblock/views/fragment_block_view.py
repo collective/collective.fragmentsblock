@@ -1,4 +1,4 @@
-"""Server renderer for the Aurora fragment block (``@type: fragment``).
+"""Server renderer for the fragment block (``@type: fragment``).
 
 Registered as ``@@aurora-block-fragment`` per the block add-on contract
 §5.1; ``BlockDispatchMixin.render_block_data`` stamps ``self.data`` before

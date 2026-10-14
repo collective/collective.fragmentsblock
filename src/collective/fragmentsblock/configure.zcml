@@ -13,7 +13,7 @@
   <genericsetup:registerProfile
       name="default"
       title="Collective Fragmentsblock"
-      description="Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
+      description="Plone fragment block for the Aurora editor: static design fragments registered by add-ons, rendered as-is"
       provides="Products.GenericSetup.interfaces.EXTENSION"
       directory="profiles/default"
       />

@@ -1,7 +1,7 @@
 {
-  "name": "@plone-collective/plone-fragment-block",
+  "name": "@plone-collective/aurora-fragment-block",
   "version": "1.0.0-alpha.1",
-  "description": "Aurora fragment block: drop registered static design fragments into pages, rendered as-is with optional variable substitution",
+  "description": "Plone fragment block for Aurora: drop registered static design fragments into pages, rendered as-is with optional variable substitution",
   "type": "module",
   "license": "MIT",
   "keywords": [

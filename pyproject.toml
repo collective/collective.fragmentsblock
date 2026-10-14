@@ -1,7 +1,7 @@
 [project]
 name = "collective.fragmentsblock"
 version = "1.0.0a5.dev0"
-description = "Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
+description = "Plone fragment block for the Aurora editor: static design fragments registered by add-ons, rendered as-is"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "GPL-2.0-or-later"}
@@ -60,7 +60,7 @@ packages = ["src/collective"]
 [tool.plone.backend_addon.settings]
 package_name = "collective.fragmentsblock"
 package_title = "Collective Fragmentsblock"
-package_description = "Aurora fragment block: static design fragments registered by add-ons, rendered as-is"
+package_description = "Plone fragment block for the Aurora editor: static design fragments registered by add-ons, rendered as-is"
 package_folder = "collective/fragmentsblock"
 plone_version = "6.0"
 is_headless = false
