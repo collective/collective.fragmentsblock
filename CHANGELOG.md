@@ -3,7 +3,9 @@
 ## 1.0.0a6 (unreleased)
 
 
-- Nothing changed yet.
+- Ship the block's stylesheet minified. The blocks view links it outside
+  Plone's resource registry, so nothing minified it on the way to the page.
+  The build strips comments and whitespace; every value ships as written.
 
 
 ## 1.0.0a5 (2026-10-16)
