@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0a6 (unreleased)
+## 1.0.0a6 (2026-10-16)
 
 
 - Ship the block's stylesheet minified. The blocks view links it outside
