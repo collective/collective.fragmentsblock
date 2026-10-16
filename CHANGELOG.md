@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0a5 (unreleased)
+## 1.0.0a5 (2026-10-16)
 
 
 - The descriptions call the Fragment block a Plone block, not an Aurora block.
