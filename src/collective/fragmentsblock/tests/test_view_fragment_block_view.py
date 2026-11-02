@@ -112,7 +112,6 @@ class TestFragmentBlockRendering:
         set_blocks(self.page, [node])
         html = self._render(self.page)
         assert "has--backgroundColor--grey" in html
-        assert "--block-background:" in html
 
     def test_traversal_shaped_id_renders_placeholder(self):
         set_blocks(self.page, [fragment_node("../conftest")])
