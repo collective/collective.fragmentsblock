@@ -2,8 +2,10 @@
 
 ## 1.0.0a7 (unreleased)
 
-
-- Nothing changed yet.
+- Update the rendering test for configurable block backgrounds: the host
+  supplies the colours through CSS classes, not inline custom properties.
+- Keep compiled CSS and JavaScript out of Git diffs; the generated files
+  remain tracked and ship with the package.
 
 
 ## 1.0.0a6 (2026-10-16)
